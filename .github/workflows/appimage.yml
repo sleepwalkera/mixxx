@@ -54,6 +54,16 @@ jobs:
             ccache g++ make cmake pkg-config patchelf file \
             desktop-file-utils libxkbcommon-dev libegl1-mesa-dev \
             libxkbcommon-x11-dev \
+            qt6-base-dev libqt6svg6-dev qt6-multimedia-dev qt6-declarative-dev \
+            libavformat-dev libebur128-dev libfaad-dev libfftw3-dev \
+            libflac-dev libmad0-dev libmodplug-dev libmp3lame-dev \
+            libopus-dev libopusfile-dev libportmidi-dev libsndfile1-dev \
+            libsoundtouch-dev libtag1-dev libwavpack-dev libchromaprint-dev \
+            librubberband-dev libshout-idjc-dev libhidapi-dev libusb-1.0-0-dev \
+            libpipewire-0.3-dev portaudio19-dev liblilv-dev lv2-dev \
+            libssl-dev libsqlite3-dev libupower-glib-dev protobuf-compiler \
+            libprotobuf-dev libgmock-dev libgtest-dev libbenchmark-dev \
+            libgl1-mesa-dev qtkeychain-qt6-dev libid3tag0-dev libmsgsl-dev
             libfuse2 fonts-open-sans
           sudo apt-get install -y --no-install-recommends libfuse2t64 2>/dev/null || true
 
@@ -64,35 +74,3 @@ jobs:
           chmod +x /tmp/appimagetool
           sudo mv /tmp/appimagetool /usr/local/bin/
 
-      - name: Download and extract buildenv
-        run: |
-          BUILDENV_URL="https://downloads.mixxx.org/dependencies/2.7/Linux/${{ matrix.buildenv_name }}.zip"
-          curl -fsSL --connect-timeout 30 --max-time 600 -o /tmp/buildenv.zip "$BUILDENV_URL"
-          echo "${{ matrix.buildenv_sha256 }}  /tmp/buildenv.zip" | sha256sum -c -
-          sudo mkdir -p /buildenv
-          sudo unzip -q /tmp/buildenv.zip -d /buildenv
-          rm /tmp/buildenv.zip
-
-      - name: Configure
-        run: |
-          cmake -B build -G "Unix Makefiles" \
-            -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-            -DQT6=ON \
-            -DQML=ON \
-            -DINSTALL_USER_UDEV_RULES=OFF \
-            -DWARNINGS_FATAL=OFF \
-            -DCMAKE_CXX_FLAGS_RELWITHDEBINFO="-O1 -g -DNDEBUG"
-
-      - name: Build
-        run: cmake --build build -j$(nproc)
-
-      - name: Package
-        run: cpack -G AppImage -V
-        working-directory: build
-
-      - name: Upload AppImage
-        uses: actions/upload-artifact@v4
-        with:
-          name: Mixxx-AppImage-${{ matrix.arch }}
-          path: build/*.AppImage
-          if-no-files-found: error
