@@ -28,15 +28,9 @@ jobs:
         include:
           - name: Linux x86_64
             os: ubuntu-26.04
-            buildenv_name: mixxx-deps-2.7-x64-linux-1c20f84a
-            buildenv_sha256: bf9b5623d61afa8d55f0e137544bad15e05e9e6a28ecfa9faa46b55ca907fd8e
-            vcpkg_triplet: x64-linux
             arch: x86_64
           # - name: Linux aarch64
           #   os: ubuntu-26.04-arm
-          #   buildenv_name: mixxx-deps-2.7-arm64-linux-...
-          #   buildenv_sha256: ...
-          #   vcpkg_triplet: arm64-linux
           #   arch: aarch64
 
     runs-on: ${{ matrix.os }}
@@ -73,3 +67,26 @@ jobs:
           chmod +x /tmp/appimagetool
           sudo mv /tmp/appimagetool /usr/local/bin/
 
+      - name: Configure
+        run: |
+          cmake -B build -G "Unix Makefiles" \
+            -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+            -DQT6=ON \
+            -DQML=ON \
+            -DINSTALL_USER_UDEV_RULES=OFF \
+            -DWARNINGS_FATAL=OFF \
+            -DCMAKE_CXX_FLAGS_RELWITHDEBINFO="-O1 -g -DNDEBUG"
+
+      - name: Build
+        run: cmake --build build -j$(nproc)
+
+      - name: Package
+        run: cpack -G AppImage -V
+        working-directory: build
+
+      - name: Upload AppImage
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mixxx-AppImage-${{ matrix.arch }}
+          path: build/*.AppImage
+          if-no-files-found: error
