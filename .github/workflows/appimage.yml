@@ -1,0 +1,103 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow
+
+name: AppImage
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - '[0-9]+.[0-9]+'
+      - 'ci-test-**'
+    paths:
+      - packaging/appimage/**
+      - .github/workflows/appimage.yml
+      - packaging/CPackConfig.cmake
+      - CMakeLists.txt
+
+jobs:
+  build:
+    name: Build AppImage
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux x86_64
+            os: ubuntu-26.04
+            buildenv_name: mixxx-deps-2.7-x64-linux-1c20f84a
+            buildenv_sha256: bf9b5623d61afa8d55f0e137544bad15e05e9e6a28ecfa9faa46b55ca907fd8e
+            vcpkg_triplet: x64-linux
+            arch: x86_64
+          # - name: Linux aarch64
+          #   os: ubuntu-26.04-arm
+          #   buildenv_name: mixxx-deps-2.7-arm64-linux-...
+          #   buildenv_sha256: ...
+          #   vcpkg_triplet: arm64-linux
+          #   arch: aarch64
+
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            ccache g++ make cmake pkg-config patchelf file \
+            desktop-file-utils libxkbcommon-dev libegl1-mesa-dev \
+            libxkbcommon-x11-dev \
+            libfuse2 fonts-open-sans
+          sudo apt-get install -y --no-install-recommends libfuse2t64 2>/dev/null || true
+
+      - name: Install appimagetool
+        run: |
+          curl -fsSL -o /tmp/appimagetool \
+            "https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-${{ matrix.arch }}.AppImage"
+          chmod +x /tmp/appimagetool
+          sudo mv /tmp/appimagetool /usr/local/bin/
+
+      - name: Download and extract buildenv
+        run: |
+          BUILDENV_URL="https://downloads.mixxx.org/dependencies/2.7/Linux/${{ matrix.buildenv_name }}.zip"
+          curl -fsSL --connect-timeout 30 --max-time 600 -o /tmp/buildenv.zip "$BUILDENV_URL"
+          echo "${{ matrix.buildenv_sha256 }}  /tmp/buildenv.zip" | sha256sum -c -
+          sudo mkdir -p /buildenv
+          sudo unzip -q /tmp/buildenv.zip -d /buildenv
+          rm /tmp/buildenv.zip
+          echo "MIXXX_VCPKG_ROOT=/buildenv/${{ matrix.buildenv_name }}" >> $GITHUB_ENV
+          echo "VCPKG_TARGET_TRIPLET=${{ matrix.vcpkg_triplet }}" >> $GITHUB_ENV
+
+      - name: Configure
+        run: |
+          cmake -B build -G "Unix Makefiles" \
+            -DMIXXX_VCPKG_ROOT=/buildenv/${{ matrix.buildenv_name }} \
+            -DVCPKG_TARGET_TRIPLET=${{ matrix.vcpkg_triplet }} \
+            -DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=BOTH \
+            -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+            -DQT6=ON \
+            -DQML=ON \
+            -DINSTALL_USER_UDEV_RULES=OFF \
+            -DWARNINGS_FATAL=OFF \
+            -DCMAKE_CXX_FLAGS_RELWITHDEBINFO="-O1 -g -DNDEBUG"
+
+      - name: Build
+        run: cmake --build build -j$(nproc)
+
+      - name: Package
+        run: cpack -G AppImage -V
+        working-directory: build
+
+      - name: Upload AppImage
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mixxx-AppImage-${{ matrix.arch }}
+          path: build/*.AppImage
+          if-no-files-found: error
