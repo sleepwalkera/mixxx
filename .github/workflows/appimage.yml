@@ -63,7 +63,7 @@ jobs:
             libpipewire-0.3-dev portaudio19-dev liblilv-dev lv2-dev \
             libssl-dev libsqlite3-dev libupower-glib-dev protobuf-compiler \
             libprotobuf-dev libgmock-dev libgtest-dev libbenchmark-dev \
-            libgl1-mesa-dev qtkeychain-qt6-dev libid3tag0-dev libmsgsl-dev
+            libgl1-mesa-dev qtkeychain-qt6-dev libid3tag0-dev libmsgsl-dev \
             libfuse2t64 fonts-open-sans
 
       - name: Install appimagetool
