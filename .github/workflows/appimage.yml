@@ -77,6 +77,9 @@ jobs:
       - name: Configure
         run: |
           cmake -B build -G "Unix Makefiles" \
+            -DMIXXX_VCPKG_ROOT=/buildenv/${{ matrix.buildenv_name }} \
+            -DVCPKG_TARGET_TRIPLET=${{ matrix.vcpkg_triplet }} \
+            -DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=BOTH \
             -DCMAKE_BUILD_TYPE=RelWithDebInfo \
             -DQT6=ON \
             -DQML=ON \
