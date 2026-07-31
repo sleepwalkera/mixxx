@@ -64,8 +64,7 @@ jobs:
             libssl-dev libsqlite3-dev libupower-glib-dev protobuf-compiler \
             libprotobuf-dev libgmock-dev libgtest-dev libbenchmark-dev \
             libgl1-mesa-dev qtkeychain-qt6-dev libid3tag0-dev libmsgsl-dev
-            libfuse2 fonts-open-sans
-          sudo apt-get install -y --no-install-recommends libfuse2t64 2>/dev/null || true
+            libfuse2t64 fonts-open-sans
 
       - name: Install appimagetool
         run: |
