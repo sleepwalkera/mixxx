@@ -53,6 +53,7 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             ccache g++ make cmake pkg-config patchelf file \
             desktop-file-utils libxkbcommon-dev libegl1-mesa-dev \
+            libxkbcommon-x11-dev \
             libfuse2 fonts-open-sans
           sudo apt-get install -y --no-install-recommends libfuse2t64 2>/dev/null || true
 
