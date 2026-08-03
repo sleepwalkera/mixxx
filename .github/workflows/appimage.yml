@@ -108,17 +108,56 @@ jobs:
         env:
           BUILDENV_BASEPATH: /home/runner/buildenv
 
+      - name: "Create XKBConfig.cmake for buildenv compatibility"
+        run: |
+          # The buildenv's Qt6GuiConfig.cmake requires find_package(XKB) but
+          # libxkbcommon-dev on Ubuntu does not provide a CMake config file.
+          # Create a minimal XKBConfig.cmake that uses pkg-config.
+          mkdir -p /tmp/xkb-cmake
+          cat > /tmp/xkb-cmake/XKBConfig.cmake << 'EOF'
+if(NOT TARGET xkbcommon::xkbcommon)
+  find_package(PkgConfig QUIET)
+  if(PkgConfig_FOUND)
+    pkg_check_modules(xkbcommon IMPORTED_TARGET xkbcommon)
+    if(xkbcommon_FOUND)
+      add_library(xkbcommon::xkbcommon ALIAS PkgConfig::xkbcommon)
+      set(XKB_FOUND TRUE)
+      set(XKB_LIBRARY ${xkbcommon_LIBRARIES})
+      set(XKB_INCLUDE_DIR ${xkbcommon_INCLUDE_DIRS})
+      set(XKB_VERSION ${xkbcommon_VERSION})
+    endif()
+  endif()
+endif()
+if(NOT XKB_FOUND)
+  find_path(XKB_INCLUDE_DIR xkbcommon/xkbcommon.h)
+  find_library(XKB_LIBRARY xkbcommon)
+  if(XKB_INCLUDE_DIR AND XKB_LIBRARY)
+    set(XKB_FOUND TRUE)
+  endif()
+endif()
+if(XKB_FOUND)
+  if(NOT TARGET xkbcommon::xkbcommon)
+    add_library(xkbcommon::xkbcommon UNKNOWN IMPORTED)
+    set_target_properties(xkbcommon::xkbcommon PROPERTIES
+      IMPORTED_LOCATION "${XKB_LIBRARY}"
+      INTERFACE_INCLUDE_DIRECTORIES "${XKB_INCLUDE_DIR}"
+    )
+  endif()
+endif()
+mark_as_advanced(XKB_LIBRARY XKB_INCLUDE_DIR)
+EOF
+          echo "XKBConfig.cmake created at /tmp/xkb-cmake/"
+
       - name: "Configure"
         run: |
           cmake -B build -G "Unix Makefiles" \
             -DCMAKE_BUILD_TYPE=RelWithDebInfo \
             -DCMAKE_TOOLCHAIN_FILE="${MIXXX_VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" \
+            -DCMAKE_PREFIX_PATH="/tmp/xkb-cmake" \
             -DQT6=ON \
             -DQML=ON \
             -DINSTALL_USER_UDEV_RULES=OFF \
             -DWARNINGS_FATAL=OFF \
-            -DVCPKG_PREFER_SYSTEM_LIBS=ON \
-            -DQt6_DIR="/usr/lib/x86_64-linux-gnu/cmake/Qt6" \
             -DCMAKE_CXX_FLAGS_RELWITHDEBINFO="-O1 -g -DNDEBUG"
 
       - name: "Build"
