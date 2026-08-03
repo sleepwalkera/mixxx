@@ -84,19 +84,17 @@ jobs:
           path: /home/runner/buildenv
           key: ${{ runner.os }}-buildenv-${{ env.BUILDENV_NAME }}
 
-      - name: "Debug buildenv"
+      - name: "Validate buildenv cache"
         run: |
-          echo "BUILDENV_NAME: ${BUILDENV_NAME}"
-          echo "MIXXX_VCPKG_ROOT: ${MIXXX_VCPKG_ROOT}"
-          echo "Buildenv path contents:"
-          ls -la /home/runner/buildenv/ 2>/dev/null || echo "buildenv base not found"
-          if [ -n "${MIXXX_VCPKG_ROOT}" ]; then
-            echo "MIXXX_VCPKG_ROOT contents:"
-            ls -la "${MIXXX_VCPKG_ROOT}/" 2>/dev/null || echo "Does not exist"
-            find "${MIXXX_VCPKG_ROOT}" -name "vcpkg.cmake" -type f 2>/dev/null || echo "vcpkg.cmake not found"
+          if [ -d "/home/runner/buildenv" ]; then
+            VCPKG_CMAKE=$(find /home/runner/buildenv -name "vcpkg.cmake" -type f -path "*/scripts/buildsystems/*" 2>/dev/null | head -1)
+            if [ -z "$VCPKG_CMAKE" ]; then
+              echo "Buildenv cache is corrupted (vcpkg.cmake not found), clearing cache"
+              rm -rf /home/runner/buildenv
+            else
+              echo "Buildenv cache is valid, vcpkg.cmake found at: ${VCPKG_CMAKE}"
+            fi
           fi
-          echo "Searching for vcpkg.cmake in buildenv:"
-          find /home/runner/buildenv -name "vcpkg.cmake" -type f 2>/dev/null || echo "Not found"
 
       - name: "Set up build environment"
         run: source tools/linux_appimage_buildenv.sh setup

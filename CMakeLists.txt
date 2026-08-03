@@ -151,8 +151,13 @@ if(DEFINED ENV{BUILDENV_URL}
         DOWNLOAD ${BUILDENV_URL} "${BUILDENV_BASEPATH}/${BUILDENV_NAME}.zip"
         SHOW_PROGRESS
         TLS_VERIFY ON
-        HTTPHEADER "User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        STATUS BUILDENV_DOWNLOAD_STATUS
       )
+      list(GET BUILDENV_DOWNLOAD_STATUS 0 BUILDENV_DOWNLOAD_ERROR)
+      if(NOT BUILDENV_DOWNLOAD_ERROR EQUAL 0)
+        list(GET BUILDENV_DOWNLOAD_STATUS 1 BUILDENV_DOWNLOAD_MESSAGE)
+        message(FATAL_ERROR "Buildenv download failed: ${BUILDENV_DOWNLOAD_MESSAGE} (code: ${BUILDENV_DOWNLOAD_ERROR})")
+      endif()
     else()
       # Reference to suppress intentionally unused variable warnings
       set(_dummy "${BUILDENV_URL}")
