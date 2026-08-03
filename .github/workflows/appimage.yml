@@ -51,7 +51,7 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             ccache g++ make cmake pkg-config patchelf file \
             desktop-file-utils \
-            libfuse2t64
+            libfuse2t64 unzip
 
       - name: "Install appimagetool"
         run: |
@@ -83,6 +83,26 @@ jobs:
         with:
           path: /home/runner/buildenv
           key: ${{ runner.os }}-buildenv-${{ env.BUILDENV_NAME }}
+
+      - name: "Download buildenv"
+        if: ${{ runner.os == 'Linux' }}
+        run: |
+          source tools/linux_appimage_buildenv.sh name
+          BUILDENV_PATH="/home/runner/buildenv/${BUILDENV_NAME}"
+          if [ ! -d "$BUILDENV_PATH" ]; then
+            BUILDENV_URL="https://downloads.mixxx.org/dependencies/2.7/Linux/${BUILDENV_NAME}.zip"
+            echo "Downloading ${BUILDENV_URL} ..."
+            curl -fsSL -o "/tmp/${BUILDENV_NAME}.zip" "$BUILDENV_URL"
+            echo "Extracting ..."
+            mkdir -p "/home/runner/buildenv"
+            unzip -q "/tmp/${BUILDENV_NAME}.zip" -d "/home/runner/buildenv/"
+            rm "/tmp/${BUILDENV_NAME}.zip"
+            echo "Buildenv downloaded and extracted to ${BUILDENV_PATH}"
+          else
+            echo "Buildenv already exists at ${BUILDENV_PATH}"
+          fi
+        env:
+          BUILDENV_BASEPATH: /home/runner/buildenv
 
       - name: "Set up build environment"
         run: source tools/linux_appimage_buildenv.sh setup
