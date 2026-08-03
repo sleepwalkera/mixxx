@@ -535,6 +535,12 @@ project(mixxx VERSION 2.7.0 LANGUAGES C CXX)
 # Work around missing version suffixes support https://gitlab.kitware.com/cmake/cmake/-/issues/16716
 set(MIXXX_VERSION_PRERELEASE "alpha") # set to "alpha" "beta" or ""
 
+# When using a vcpkg buildenv on Linux, the vcpkg Qt6 may be incomplete.
+# Prepend system Qt6 paths to CMAKE_PREFIX_PATH so system packages take priority.
+if(DEFINED MIXXX_VCPKG_ROOT AND UNIX AND NOT APPLE)
+  list(PREPEND CMAKE_PREFIX_PATH "/usr/lib/x86_64-linux-gnu/cmake")
+endif()
+
 set(CMAKE_PROJECT_HOMEPAGE_URL "https://www.mixxx.org")
 set(
   CMAKE_PROJECT_DESCRIPTION
