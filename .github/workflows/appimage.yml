@@ -114,6 +114,21 @@ jobs:
         env:
           BUILDENV_BASEPATH: /home/runner/buildenv
 
+      - name: "Debug buildenv"
+        run: |
+          echo "BUILDENV_NAME: ${BUILDENV_NAME}"
+          echo "MIXXX_VCPKG_ROOT: ${MIXXX_VCPKG_ROOT}"
+          echo "Buildenv path contents:"
+          ls -la /home/runner/buildenv/
+          if [ -n "${MIXXX_VCPKG_ROOT}" ]; then
+            echo "MIXXX_VCPKG_ROOT contents:"
+            ls -la "${MIXXX_VCPKG_ROOT}/" 2>/dev/null || echo "Does not exist"
+            echo "Searching for vcpkg.cmake in MIXXX_VCPKG_ROOT:"
+            find "${MIXXX_VCPKG_ROOT}" -name "vcpkg.cmake" -type f 2>/dev/null || echo "Not found"
+          fi
+          echo "Searching for vcpkg.cmake in buildenv:"
+          find /home/runner/buildenv -name "vcpkg.cmake" -type f 2>/dev/null || echo "Not found"
+
       - name: "Set up build environment"
         run: source tools/linux_appimage_buildenv.sh setup
         env:
