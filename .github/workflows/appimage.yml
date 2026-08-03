@@ -58,11 +58,7 @@ jobs:
             libxcb-glx0-dev libxcb-cursor-dev libxcb-keysyms1-dev \
             libxcb-randr0-dev libxcb-xfixes0-dev libxcb-xinerama0-dev \
             libxcb-xkb-dev libxcb-shm0-dev libxcb-icccm4-dev \
-            libxcb-image0-dev libxcb-util-dev libxcb-ewmh-dev \
-            libxcb-render0-dev libxcb-shape0-dev libxcb-sync-dev \
-            libxcb-xinput-dev libxcb-composite0-dev libxcb-damage0-dev \
-            libxcb-present-dev libxcb-xtest0-dev libxcb-record0-dev \
-            libxcb-res0-dev libxcb-screensaver0-dev libxcb-xv-dev
+            libxcb-image0-dev libxcb-util0-dev libxcb-ewmh2-dev
 
       - name: "Install appimagetool"
         run: |
