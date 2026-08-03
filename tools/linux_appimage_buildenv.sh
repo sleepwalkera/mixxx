@@ -66,21 +66,22 @@ case "$1" in
     setup)
         BUILDENV_PATH="${BUILDENV_BASEPATH}/${BUILDENV_NAME}"
 
+        # Determine the vcpkg root (may be directly in BUILDENV_PATH or in a vcpkg/ subdirectory)
+        if [ -d "${BUILDENV_PATH}/vcpkg/scripts/buildsystems" ]; then
+            MIXXX_VCPKG_ROOT="${BUILDENV_PATH}/vcpkg"
+        else
+            MIXXX_VCPKG_ROOT="${BUILDENV_PATH}"
+        fi
+
         export BUILDENV_NAME
         export BUILDENV_BASEPATH
-        export BUILDENV_URL
-        export BUILDENV_SHA256
-        export MIXXX_VCPKG_ROOT="${BUILDENV_PATH}"
-        export CMAKE_GENERATOR=Ninja
+        export MIXXX_VCPKG_ROOT
         export VCPKG_TARGET_TRIPLET="${VCPKG_TARGET_TRIPLET}"
 
         echo_exported_variables() {
             echo "BUILDENV_NAME=${BUILDENV_NAME}"
             echo "BUILDENV_BASEPATH=${BUILDENV_BASEPATH}"
-            echo "BUILDENV_URL=${BUILDENV_URL}"
-            echo "BUILDENV_SHA256=${BUILDENV_SHA256}"
             echo "MIXXX_VCPKG_ROOT=${MIXXX_VCPKG_ROOT}"
-            echo "CMAKE_GENERATOR=${CMAKE_GENERATOR}"
             echo "VCPKG_TARGET_TRIPLET=${VCPKG_TARGET_TRIPLET}"
         }
 

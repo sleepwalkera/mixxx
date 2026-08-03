@@ -101,6 +101,16 @@ jobs:
           else
             echo "Buildenv already exists at ${BUILDENV_PATH}"
           fi
+          # Verify vcpkg root
+          if [ -f "${BUILDENV_PATH}/scripts/buildsystems/vcpkg.cmake" ]; then
+            echo "Vcpkg root verified at ${BUILDENV_PATH}"
+          elif [ -f "${BUILDENV_PATH}/vcpkg/scripts/buildsystems/vcpkg.cmake" ]; then
+            echo "Vcpkg root found inside vcpkg/ subdirectory"
+            echo "MIXXX_VCPKG_ROOT=${BUILDENV_PATH}/vcpkg" >> "${GITHUB_ENV}"
+          else
+            echo "Warning: Could not find vcpkg.cmake in expected locations"
+            find "${BUILDENV_PATH}" -name "vcpkg.cmake" -type f 2>/dev/null
+          fi
         env:
           BUILDENV_BASEPATH: /home/runner/buildenv
 
