@@ -65,7 +65,8 @@ jobs:
             libssl-dev libsqlite3-dev libupower-glib-dev protobuf-compiler \
             libprotobuf-dev libgmock-dev libgtest-dev libbenchmark-dev \
             libgl1-mesa-dev qtkeychain-qt6-dev libid3tag0-dev libmsgsl-dev \
-            libfuse2t64 fonts-open-sans
+            libfuse2t64 fonts-open-sans \
+            libqt6svg6
 
       - name: "Install appimagetool"
         run: |
@@ -96,12 +97,18 @@ jobs:
         run: cmake --build build -j$(nproc)
 
       - name: "Install to staging directory"
-        run: cmake --install build --prefix /tmp/AppDir/usr --config RelWithDebInfo
+        run: |
+          cmake --install build --prefix /tmp/AppDir/usr --config RelWithDebInfo
+          # Install controller QML files (not handled by cmake --install)
+          mkdir -p /tmp/AppDir/usr/share/mixxx/controllers
+          cp -r res/controllers/* /tmp/AppDir/usr/share/mixxx/controllers/
 
       - name: "Bundle dependencies and create AppImage"
         run: |
           export APPIMAGE_EXTRACT_AND_RUN=1
           export QML_SOURCES_PATHS=/tmp/AppDir/usr/share/mixxx/qml
+          export QML_IMPORT_PATHS=/tmp/AppDir/usr/share/mixxx/controllers/TraktorKontrolS4MK3Screens
+          export QML_IMPORT_PATHS=/tmp/AppDir/usr/share/mixxx/controllers
           /tmp/linuxdeploy --appdir /tmp/AppDir \
             --executable /tmp/AppDir/usr/bin/mixxx \
             --desktop-file /tmp/AppDir/usr/share/applications/mixxx-appimage.desktop \
