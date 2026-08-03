@@ -14,11 +14,9 @@ on:
       - '[0-9]+.[0-9]+'
       - 'ci-test-**'
     paths:
-      - packaging/appimage/**
       - .github/workflows/appimage.yml
       - packaging/CPackConfig.cmake
       - CMakeLists.txt
-      - tools/linux_appimage_buildenv.sh
 
 jobs:
   build:
@@ -50,8 +48,33 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             ccache g++ make cmake pkg-config patchelf file \
-            desktop-file-utils \
-            libfuse2t64 unzip
+            desktop-file-utils libxkbcommon-dev libegl1-mesa-dev \
+            libxkbcommon-x11-dev \
+            qt6-base-dev libqt6svg6-dev qt6-multimedia-dev qt6-declarative-dev \
+            qt6-shadertools-dev \
+            qt6-5compat-dev \
+            qt6-base-private-dev \
+            qt6-declarative-private-dev \
+            libavformat-dev libebur128-dev libfaad-dev libfftw3-dev \
+            libflac-dev libmad0-dev libmodplug-dev libmp3lame-dev \
+            libopus-dev libopusfile-dev libportmidi-dev libsndfile1-dev \
+            libsoundtouch-dev libtag1-dev libwavpack-dev libchromaprint-dev \
+            librubberband-dev libshout-idjc-dev libhidapi-dev libusb-1.0-0-dev \
+            libpipewire-0.3-dev portaudio19-dev liblilv-dev lv2-dev \
+            libssl-dev libsqlite3-dev libupower-glib-dev protobuf-compiler \
+            libprotobuf-dev libgmock-dev libgtest-dev libbenchmark-dev \
+            libgl1-mesa-dev qtkeychain-qt6-dev libid3tag0-dev libmsgsl-dev \
+            libfuse2t64 fonts-open-sans \
+            qt6-svg-plugins \
+            qml6-module-qtquick-controls \
+            qml6-module-qtquick-dialogs \
+            qml6-module-qtquick-layouts \
+            qml6-module-qtquick-shapes \
+            qml6-module-qtquick-templates \
+            qml6-module-qtquick-window \
+            qml6-module-qt-labs-qmlmodels \
+            qml6-module-qt-labs-folderlistmodel \
+            qml6-module-qtmultimedia
 
       - name: "Install appimagetool"
         run: |
@@ -60,85 +83,10 @@ jobs:
           chmod +x /tmp/appimagetool
           sudo mv /tmp/appimagetool /usr/local/bin/
 
-      - name: "[Ubuntu/macOS] Set up GitHub cache for ccache"
-        uses: actions/cache@v6
-        with:
-          path: /home/runner/.cache/ccache
-          key: ${{ matrix.os }}-appimage-qt6-${{ github.run_number }}
-          restore-keys: |
-            ${{ matrix.os }}-appimage-qt6
-
-      - name: "Set up ccache"
-        run: |
-          ccache --zero-stats
-          ccache --max-size=2G
-
-      - name: "Get build environment name"
-        run: source tools/linux_appimage_buildenv.sh name
-        env:
-          BUILDENV_BASEPATH: /home/runner/buildenv
-
-      - name: "Set up build environment cache"
-        uses: actions/cache@v6
-        with:
-          path: /home/runner/buildenv
-          key: ${{ runner.os }}-buildenv-${{ env.BUILDENV_NAME }}
-
-      - name: "Download buildenv"
-        if: ${{ runner.os == 'Linux' }}
-        run: |
-          source tools/linux_appimage_buildenv.sh name
-          BUILDENV_PATH="/home/runner/buildenv/${BUILDENV_NAME}"
-          if [ ! -d "$BUILDENV_PATH" ]; then
-            BUILDENV_URL="https://downloads.mixxx.org/dependencies/2.7/Linux/${BUILDENV_NAME}.zip"
-            echo "Downloading ${BUILDENV_URL} ..."
-            curl -fsSL -o "/tmp/${BUILDENV_NAME}.zip" "$BUILDENV_URL"
-            echo "Extracting ..."
-            mkdir -p "/home/runner/buildenv"
-            unzip -q "/tmp/${BUILDENV_NAME}.zip" -d "/home/runner/buildenv/"
-            rm "/tmp/${BUILDENV_NAME}.zip"
-            echo "Buildenv downloaded and extracted to ${BUILDENV_PATH}"
-          else
-            echo "Buildenv already exists at ${BUILDENV_PATH}"
-          fi
-          # Verify vcpkg root
-          if [ -f "${BUILDENV_PATH}/scripts/buildsystems/vcpkg.cmake" ]; then
-            echo "Vcpkg root verified at ${BUILDENV_PATH}"
-          elif [ -f "${BUILDENV_PATH}/vcpkg/scripts/buildsystems/vcpkg.cmake" ]; then
-            echo "Vcpkg root found inside vcpkg/ subdirectory"
-            echo "MIXXX_VCPKG_ROOT=${BUILDENV_PATH}/vcpkg" >> "${GITHUB_ENV}"
-          else
-            echo "Warning: Could not find vcpkg.cmake in expected locations"
-            find "${BUILDENV_PATH}" -name "vcpkg.cmake" -type f 2>/dev/null
-          fi
-        env:
-          BUILDENV_BASEPATH: /home/runner/buildenv
-
-      - name: "Debug buildenv"
-        run: |
-          echo "BUILDENV_NAME: ${BUILDENV_NAME}"
-          echo "MIXXX_VCPKG_ROOT: ${MIXXX_VCPKG_ROOT}"
-          echo "Buildenv path contents:"
-          ls -la /home/runner/buildenv/
-          if [ -n "${MIXXX_VCPKG_ROOT}" ]; then
-            echo "MIXXX_VCPKG_ROOT contents:"
-            ls -la "${MIXXX_VCPKG_ROOT}/" 2>/dev/null || echo "Does not exist"
-            echo "Searching for vcpkg.cmake in MIXXX_VCPKG_ROOT:"
-            find "${MIXXX_VCPKG_ROOT}" -name "vcpkg.cmake" -type f 2>/dev/null || echo "Not found"
-          fi
-          echo "Searching for vcpkg.cmake in buildenv:"
-          find /home/runner/buildenv -name "vcpkg.cmake" -type f 2>/dev/null || echo "Not found"
-
-      - name: "Set up build environment"
-        run: source tools/linux_appimage_buildenv.sh setup
-        env:
-          BUILDENV_BASEPATH: /home/runner/buildenv
-
       - name: "Configure"
         run: |
           cmake -B build -G "Unix Makefiles" \
             -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-            -DCMAKE_TOOLCHAIN_FILE="${MIXXX_VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" \
             -DQT6=ON \
             -DQML=ON \
             -DINSTALL_USER_UDEV_RULES=OFF \
