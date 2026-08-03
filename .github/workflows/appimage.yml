@@ -153,7 +153,7 @@ EOF
           cmake -B build -G "Unix Makefiles" \
             -DCMAKE_BUILD_TYPE=RelWithDebInfo \
             -DCMAKE_TOOLCHAIN_FILE="${MIXXX_VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" \
-            -DCMAKE_PREFIX_PATH="/tmp/xkb-cmake" \
+            -DCMAKE_PREFIX_PATH="/tmp/xkb-cmake;${CMAKE_PREFIX_PATH}" \
             -DQT6=ON \
             -DQML=ON \
             -DINSTALL_USER_UDEV_RULES=OFF \
