@@ -107,17 +107,18 @@ jobs:
 
       - name: "Install to staging directory"
         run: |
-          cmake --install build --prefix /tmp/AppDir/usr --config RelWithDebInfo
+          cmake --install build --prefix /tmp/AppDir/usr
           # Install controller QML files (not handled by cmake --install)
           mkdir -p /tmp/AppDir/usr/share/mixxx/controllers
-          cp -r res/controllers/* /tmp/AppDir/usr/share/mixxx/controllers/
+          if [ -d res/controllers ] && [ -n "$(ls -A res/controllers)" ]; then
+            cp -r res/controllers/* /tmp/AppDir/usr/share/mixxx/controllers/
+          fi
 
       - name: "Bundle dependencies and create AppImage"
         run: |
           export APPIMAGE_EXTRACT_AND_RUN=1
           export QML_SOURCES_PATHS=/tmp/AppDir/usr/share/mixxx/qml
           export QML_IMPORT_PATHS=/tmp/AppDir/usr/share/mixxx/qml:/tmp/AppDir/usr/share/mixxx/controllers/TraktorKontrolS4MK3Screens
-          export QML_IMPORT_PATHS=/tmp/AppDir/usr/share/mixxx/controllers
           /tmp/linuxdeploy --appdir /tmp/AppDir \
             --executable /tmp/AppDir/usr/bin/mixxx \
             --desktop-file /tmp/AppDir/usr/share/applications/mixxx-appimage.desktop \
