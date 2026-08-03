@@ -18,6 +18,7 @@ on:
       - .github/workflows/appimage.yml
       - packaging/CPackConfig.cmake
       - CMakeLists.txt
+      - tools/linux_appimage_buildenv.sh
 
 jobs:
   build:
@@ -49,33 +50,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             ccache g++ make cmake pkg-config patchelf file \
-            desktop-file-utils libxkbcommon-dev libegl1-mesa-dev \
-            libxkbcommon-x11-dev \
-            qt6-base-dev libqt6svg6-dev qt6-multimedia-dev qt6-declarative-dev \
-            qt6-shadertools-dev \
-            qt6-5compat-dev \
-            qt6-base-private-dev \
-            qt6-declarative-private-dev \
-            libavformat-dev libebur128-dev libfaad-dev libfftw3-dev \
-            libflac-dev libmad0-dev libmodplug-dev libmp3lame-dev \
-            libopus-dev libopusfile-dev libportmidi-dev libsndfile1-dev \
-            libsoundtouch-dev libtag1-dev libwavpack-dev libchromaprint-dev \
-            librubberband-dev libshout-idjc-dev libhidapi-dev libusb-1.0-0-dev \
-            libpipewire-0.3-dev portaudio19-dev liblilv-dev lv2-dev \
-            libssl-dev libsqlite3-dev libupower-glib-dev protobuf-compiler \
-            libprotobuf-dev libgmock-dev libgtest-dev libbenchmark-dev \
-            libgl1-mesa-dev qtkeychain-qt6-dev libid3tag0-dev libmsgsl-dev \
-            libfuse2t64 fonts-open-sans \
-            qt6-svg-plugins \
-            qml6-module-qtquick-controls \
-            qml6-module-qtquick-dialogs \
-            qml6-module-qtquick-layouts \
-            qml6-module-qtquick-shapes \
-            qml6-module-qtquick-templates \
-            qml6-module-qtquick-window \
-            qml6-module-qt-labs-qmlmodels \
-            qml6-module-qt-labs-folderlistmodel \
-            qml6-module-qtmultimedia
+            desktop-file-utils \
+            libfuse2t64
 
       - name: "Install appimagetool"
         run: |
@@ -84,18 +60,40 @@ jobs:
           chmod +x /tmp/appimagetool
           sudo mv /tmp/appimagetool /usr/local/bin/
 
-      - name: "Download linuxdeploy"
+      - name: "[Ubuntu/macOS] Set up GitHub cache for ccache"
+        uses: actions/cache@v6
+        with:
+          path: /home/runner/.cache/ccache
+          key: ${{ matrix.os }}-appimage-qt6-${{ github.run_number }}
+          restore-keys: |
+            ${{ matrix.os }}-appimage-qt6
+
+      - name: "Set up ccache"
         run: |
-          curl -fsSL -o /tmp/linuxdeploy \
-            "https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-${{ matrix.arch }}.AppImage"
-          curl -fsSL -o /tmp/linuxdeploy-plugin-qt \
-            "https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-${{ matrix.arch }}.AppImage"
-          chmod +x /tmp/linuxdeploy /tmp/linuxdeploy-plugin-qt
+          ccache --zero-stats
+          ccache --max-size=2G
+
+      - name: "Get build environment name"
+        run: source tools/linux_appimage_buildenv.sh name
+        env:
+          BUILDENV_BASEPATH: /home/runner/buildenv
+
+      - name: "Set up build environment cache"
+        uses: actions/cache@v6
+        with:
+          path: /home/runner/buildenv
+          key: ${{ runner.os }}-buildenv-${{ env.BUILDENV_NAME }}
+
+      - name: "Set up build environment"
+        run: source tools/linux_appimage_buildenv.sh setup
+        env:
+          BUILDENV_BASEPATH: /home/runner/buildenv
 
       - name: "Configure"
         run: |
           cmake -B build -G "Unix Makefiles" \
             -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+            -DCMAKE_TOOLCHAIN_FILE="${MIXXX_VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" \
             -DQT6=ON \
             -DQML=ON \
             -DINSTALL_USER_UDEV_RULES=OFF \
@@ -105,28 +103,9 @@ jobs:
       - name: "Build"
         run: cmake --build build -j$(nproc)
 
-      - name: "Install to staging directory"
-        run: |
-          cmake --install build --prefix /tmp/AppDir/usr
-          # Install controller QML files (not handled by cmake --install)
-          mkdir -p /tmp/AppDir/usr/share/mixxx/controllers
-          if [ -d res/controllers ] && [ -n "$(ls -A res/controllers)" ]; then
-            cp -r res/controllers/* /tmp/AppDir/usr/share/mixxx/controllers/
-          fi
-
-      - name: "Bundle dependencies and create AppImage"
-        run: |
-          export APPIMAGE_EXTRACT_AND_RUN=1
-          export QML_SOURCES_PATHS=/tmp/AppDir/usr/share/mixxx/qml
-          export QML_IMPORT_PATHS=/tmp/AppDir/usr/share/mixxx/qml:/tmp/AppDir/usr/share/mixxx/controllers/TraktorKontrolS4MK3Screens
-          /tmp/linuxdeploy --appdir /tmp/AppDir \
-            --executable /tmp/AppDir/usr/bin/mixxx \
-            --desktop-file /tmp/AppDir/usr/share/applications/mixxx-appimage.desktop \
-            --icon-file /tmp/AppDir/usr/share/icons/hicolor/256x256/apps/mixxx.png \
-            --plugin qt
-          GIT_DESCRIBE=$(git describe --tags --always 2>/dev/null || echo "unknown")
-          appimagetool --no-appstream /tmp/AppDir \
-            "build/mixxx-${GIT_DESCRIBE}-${{ matrix.arch }}.AppImage"
+      - name: "Package"
+        run: cpack -G AppImage -V
+        working-directory: build
 
       - name: "Upload AppImage"
         uses: actions/upload-artifact@v4

@@ -97,8 +97,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL Android)
   )
 endif()
 
-if(
-  ((APPLE AND NOT IOS) OR WIN32 OR ANDROID)
+if(DEFINED BUILDENV_URL
   AND NOT IS_DIRECTORY "${MIXXX_VCPKG_ROOT}"
 )
   if(NOT DEFINED BUILDENV_BASEPATH)
@@ -2631,9 +2630,13 @@ if(UNIX AND NOT APPLE)
     DESTINATION "${CMAKE_INSTALL_DATADIR}/applications"
   )
 
-  # AppImage-specific .desktop file (with simplified Exec=mixxx)
+  # AppImage-specific .desktop file (generated from original with simplified Exec=mixxx)
+  set(MIXXX_APPIMAGE_DESKTOP_FILE "${CMAKE_CURRENT_BINARY_DIR}/mixxx-appimage.desktop")
+  file(READ "${CMAKE_CURRENT_SOURCE_DIR}/res/linux/org.mixxx.Mixxx.desktop" MIXXX_APPIMAGE_DESKTOP_CONTENT)
+  string(REGEX REPLACE "\nExec=.*" "\nExec=mixxx" MIXXX_APPIMAGE_DESKTOP_CONTENT "${MIXXX_APPIMAGE_DESKTOP_CONTENT}")
+  file(WRITE "${MIXXX_APPIMAGE_DESKTOP_FILE}" "${MIXXX_APPIMAGE_DESKTOP_CONTENT}")
   install(
-    FILES "${CMAKE_CURRENT_SOURCE_DIR}/packaging/appimage/org.mixxx.Mixxx.desktop"
+    FILES "${MIXXX_APPIMAGE_DESKTOP_FILE}"
     DESTINATION "${CMAKE_INSTALL_DATADIR}/applications"
     RENAME "mixxx-appimage.desktop"
   )
