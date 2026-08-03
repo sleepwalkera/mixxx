@@ -67,11 +67,15 @@ case "$1" in
         BUILDENV_PATH="${BUILDENV_BASEPATH}/${BUILDENV_NAME}"
 
         # Determine the vcpkg root (may be directly in BUILDENV_PATH or in a vcpkg/ subdirectory)
-        if [ -d "${BUILDENV_PATH}/vcpkg/scripts/buildsystems" ]; then
+        if [ -d "${BUILDENV_PATH}/vcpkg" ]; then
             MIXXX_VCPKG_ROOT="${BUILDENV_PATH}/vcpkg"
+        elif [ -d "${BUILDENV_PATH}" ]; then
+            MIXXX_VCPKG_ROOT="${BUILDENV_PATH}"
         else
+            echo "Warning: BUILDENV_PATH ${BUILDENV_PATH} does not exist"
             MIXXX_VCPKG_ROOT="${BUILDENV_PATH}"
         fi
+        echo "MIXXX_VCPKG_ROOT set to ${MIXXX_VCPKG_ROOT}"
 
         export BUILDENV_NAME
         export BUILDENV_BASEPATH
