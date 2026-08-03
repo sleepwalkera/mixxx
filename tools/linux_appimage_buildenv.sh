@@ -56,10 +56,9 @@ MIXXX_ROOT="$(realpath "$(dirname "$THIS_SCRIPT_NAME")/..")"
 
 case "$1" in
     name)
+        echo "$BUILDENV_NAME"
         if [ -n "${GITHUB_ENV}" ]; then
             echo "BUILDENV_NAME=$BUILDENV_NAME" >> "${GITHUB_ENV}"
-        else
-            echo "$BUILDENV_NAME"
         fi
         ;;
 
