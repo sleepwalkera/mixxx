@@ -51,7 +51,9 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             ccache g++ make cmake pkg-config patchelf file \
             desktop-file-utils \
-            libfuse2t64 unzip
+            libfuse2t64 unzip \
+            libsqlite3-dev libssl-dev libprotobuf-dev protobuf-compiler \
+            libgl1-mesa-dev
 
       - name: "Install appimagetool"
         run: |
