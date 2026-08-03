@@ -36,12 +36,15 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
     steps:
-      - name: Checkout
+      - name: "Check out repository"
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Install system dependencies
+      - name: "Ensure that all tags are fetched"
+        run: git fetch origin --force --tags
+
+      - name: "Install system dependencies"
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
@@ -64,14 +67,22 @@ jobs:
             libgl1-mesa-dev qtkeychain-qt6-dev libid3tag0-dev libmsgsl-dev \
             libfuse2t64 fonts-open-sans
 
-      - name: Install appimagetool
+      - name: "Install appimagetool"
         run: |
           curl -fsSL -o /tmp/appimagetool \
             "https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-${{ matrix.arch }}.AppImage"
           chmod +x /tmp/appimagetool
           sudo mv /tmp/appimagetool /usr/local/bin/
 
-      - name: Configure
+      - name: "Download linuxdeploy"
+        run: |
+          curl -fsSL -o /tmp/linuxdeploy \
+            "https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-${{ matrix.arch }}.AppImage"
+          curl -fsSL -o /tmp/linuxdeploy-plugin-qt \
+            "https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-${{ matrix.arch }}.AppImage"
+          chmod +x /tmp/linuxdeploy /tmp/linuxdeploy-plugin-qt
+
+      - name: "Configure"
         run: |
           cmake -B build -G "Unix Makefiles" \
             -DCMAKE_BUILD_TYPE=RelWithDebInfo \
@@ -81,14 +92,26 @@ jobs:
             -DWARNINGS_FATAL=OFF \
             -DCMAKE_CXX_FLAGS_RELWITHDEBINFO="-O1 -g -DNDEBUG"
 
-      - name: Build
+      - name: "Build"
         run: cmake --build build -j$(nproc)
 
-      - name: Package
-        run: cpack -G AppImage -V
-        working-directory: build
+      - name: "Install to staging directory"
+        run: cmake --install build --prefix /tmp/AppDir/usr --config RelWithDebInfo
 
-      - name: Upload AppImage
+      - name: "Bundle dependencies and create AppImage"
+        run: |
+          export APPIMAGE_EXTRACT_AND_RUN=1
+          export QML_SOURCES_PATHS=/tmp/AppDir/usr/share/mixxx/qml
+          /tmp/linuxdeploy --appdir /tmp/AppDir \
+            --executable /tmp/AppDir/usr/bin/mixxx \
+            --desktop-file /tmp/AppDir/usr/share/applications/mixxx-appimage.desktop \
+            --icon-file /tmp/AppDir/usr/share/icons/hicolor/256x256/apps/mixxx.png \
+            --plugin qt
+          GIT_DESCRIBE=$(git describe --tags --always 2>/dev/null || echo "unknown")
+          appimagetool --no-appstream /tmp/AppDir \
+            "build/mixxx-${GIT_DESCRIBE}-${{ matrix.arch }}.AppImage"
+
+      - name: "Upload AppImage"
         uses: actions/upload-artifact@v4
         with:
           name: Mixxx-AppImage-${{ matrix.arch }}
