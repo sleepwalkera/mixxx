@@ -108,13 +108,13 @@ jobs:
         env:
           BUILDENV_BASEPATH: /home/runner/buildenv
 
-      - name: "Create XKBConfig.cmake for buildenv compatibility"
+      - name: "Create FindXKB.cmake for buildenv compatibility"
         run: |
           # The buildenv's Qt6GuiConfig.cmake requires find_package(XKB) but
           # libxkbcommon-dev on Ubuntu does not provide a CMake config file.
-          # Create a minimal XKBConfig.cmake that uses pkg-config.
+          # Create a minimal FindXKB.cmake that uses pkg-config.
           mkdir -p /tmp/xkb-cmake
-          cat > /tmp/xkb-cmake/XKBConfig.cmake << 'EOF'
+          cat > /tmp/xkb-cmake/FindXKB.cmake << 'EOF'
 if(NOT TARGET xkbcommon::xkbcommon)
   find_package(PkgConfig QUIET)
   if(PkgConfig_FOUND)
@@ -153,7 +153,7 @@ EOF
           cmake -B build -G "Unix Makefiles" \
             -DCMAKE_BUILD_TYPE=RelWithDebInfo \
             -DCMAKE_TOOLCHAIN_FILE="${MIXXX_VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" \
-            -DCMAKE_PREFIX_PATH="/tmp/xkb-cmake;${CMAKE_PREFIX_PATH}" \
+            -DCMAKE_MODULE_PATH="/tmp/xkb-cmake" \
             -DQT6=ON \
             -DQML=ON \
             -DINSTALL_USER_UDEV_RULES=OFF \
