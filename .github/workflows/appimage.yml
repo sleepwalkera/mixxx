@@ -113,6 +113,7 @@ jobs:
             -DINSTALL_USER_UDEV_RULES=OFF \
             -DWARNINGS_FATAL=OFF \
             -DVCPKG_PREFER_SYSTEM_LIBS=ON \
+            -DCMAKE_PREFIX_PATH="/usr/lib/x86_64-linux-gnu/cmake" \
             -DCMAKE_CXX_FLAGS_RELWITHDEBINFO="-O1 -g -DNDEBUG"
 
       - name: "Build"
