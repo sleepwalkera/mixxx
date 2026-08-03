@@ -112,6 +112,7 @@ jobs:
             -DQML=ON \
             -DINSTALL_USER_UDEV_RULES=OFF \
             -DWARNINGS_FATAL=OFF \
+            -DVCPKG_PREFER_SYSTEM_LIBS=ON \
             -DCMAKE_CXX_FLAGS_RELWITHDEBINFO="-O1 -g -DNDEBUG"
 
       - name: "Build"
