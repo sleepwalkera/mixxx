@@ -160,6 +160,12 @@ if(DEFINED ENV{BUILDENV_URL}
         list(GET BUILDENV_DOWNLOAD_STATUS 1 BUILDENV_DOWNLOAD_MESSAGE)
         message(FATAL_ERROR "Buildenv download failed: ${BUILDENV_DOWNLOAD_MESSAGE} (code: ${BUILDENV_DOWNLOAD_ERROR})")
       endif()
+      # Verify the downloaded file is a valid zip (Cloudflare may return an HTML page)
+      file(SIZE "${BUILDENV_BASEPATH}/${BUILDENV_NAME}.zip" BUILDENV_ZIP_SIZE)
+      if(BUILDENV_ZIP_SIZE LESS 1000000)
+        file(READ "${BUILDENV_BASEPATH}/${BUILDENV_NAME}.zip" BUILDENV_ZIP_HEADER LIMIT 200)
+        message(FATAL_ERROR "Buildenv download appears to be invalid (size: ${BUILDENV_ZIP_SIZE} bytes). First bytes: ${BUILDENV_ZIP_HEADER}")
+      endif()
     else()
       # Reference to suppress intentionally unused variable warnings
       set(_dummy "${BUILDENV_URL}")
