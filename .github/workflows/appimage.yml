@@ -104,13 +104,13 @@ jobs:
             echo "Buildenv already exists at ${BUILDENV_PATH}"
           fi
           # Verify vcpkg root
-          if [ -f "${BUILDENV_PATH}/scripts/buildsystems/vcpkg.cmake" ]; then
-            echo "Vcpkg root verified at ${BUILDENV_PATH}"
-          elif [ -f "${BUILDENV_PATH}/vcpkg/scripts/buildsystems/vcpkg.cmake" ]; then
-            echo "Vcpkg root found inside vcpkg/ subdirectory"
-            echo "MIXXX_VCPKG_ROOT=${BUILDENV_PATH}/vcpkg" >> "${GITHUB_ENV}"
+          VCPKG_CMAKE=$(find "${BUILDENV_PATH}" -name "vcpkg.cmake" -type f -path "*/scripts/buildsystems/*" 2>/dev/null | head -1)
+          if [ -n "$VCPKG_CMAKE" ]; then
+            MIXXX_VCPKG_ROOT_VAL=$(dirname "$VCPKG_CMAKE" | xargs dirname)
+            echo "Vcpkg root found: ${MIXXX_VCPKG_ROOT_VAL}"
+            echo "MIXXX_VCPKG_ROOT=${MIXXX_VCPKG_ROOT_VAL}" >> "${GITHUB_ENV}"
           else
-            echo "Warning: Could not find vcpkg.cmake in expected locations"
+            echo "Warning: Could not find vcpkg.cmake in buildenv"
             find "${BUILDENV_PATH}" -name "vcpkg.cmake" -type f 2>/dev/null || echo "No vcpkg.cmake found anywhere in buildenv"
             echo "Buildenv top-level contents:"
             ls -la "${BUILDENV_PATH}/" 2>/dev/null || echo "BUILDENV_PATH does not exist"

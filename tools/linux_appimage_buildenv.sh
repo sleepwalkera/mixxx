@@ -65,15 +65,17 @@ case "$1" in
     setup)
         BUILDENV_PATH="${BUILDENV_BASEPATH}/${BUILDENV_NAME}"
 
-        # Determine the vcpkg root (may be directly in BUILDENV_PATH or in a vcpkg/ subdirectory)
+        # Determine the vcpkg root by finding vcpkg.cmake
         if [ -n "${MIXXX_VCPKG_ROOT}" ]; then
             echo "MIXXX_VCPKG_ROOT already set to ${MIXXX_VCPKG_ROOT}, preserving"
-        elif [ -d "${BUILDENV_PATH}/vcpkg" ]; then
-            MIXXX_VCPKG_ROOT="${BUILDENV_PATH}/vcpkg"
-            echo "MIXXX_VCPKG_ROOT set to ${MIXXX_VCPKG_ROOT}"
         elif [ -d "${BUILDENV_PATH}" ]; then
-            MIXXX_VCPKG_ROOT="${BUILDENV_PATH}"
-            echo "MIXXX_VCPKG_ROOT set to ${MIXXX_VCPKG_ROOT}"
+            MIXXX_VCPKG_ROOT=$(find "${BUILDENV_PATH}" -name "vcpkg.cmake" -type f -path "*/scripts/buildsystems/*" 2>/dev/null | head -1 | xargs -r dirname | xargs -r dirname || true)
+            if [ -z "${MIXXX_VCPKG_ROOT}" ]; then
+                echo "Warning: Could not find vcpkg.cmake in BUILDENV_PATH, using BUILDENV_PATH directly"
+                MIXXX_VCPKG_ROOT="${BUILDENV_PATH}"
+            else
+                echo "MIXXX_VCPKG_ROOT set to ${MIXXX_VCPKG_ROOT}"
+            fi
         else
             echo "Warning: BUILDENV_PATH ${BUILDENV_PATH} does not exist"
             MIXXX_VCPKG_ROOT="${BUILDENV_PATH}"
