@@ -52,6 +52,7 @@ jobs:
             qt6-shadertools-dev \
             qt6-5compat-dev \
             qt6-base-private-dev \
+            qt6-declarative-private-dev \
             libavformat-dev libebur128-dev libfaad-dev libfftw3-dev \
             libflac-dev libmad0-dev libmodplug-dev libmp3lame-dev \
             libopus-dev libopusfile-dev libportmidi-dev libsndfile1-dev \
