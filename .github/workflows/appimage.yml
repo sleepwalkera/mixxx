@@ -90,7 +90,15 @@ jobs:
           source tools/linux_appimage_buildenv.sh name
           BUILDENV_NAME="${BUILDENV_NAME:-mixxx-deps-2.7-x64-linux-1c20f84a}"
           BUILDENV_PATH="/home/runner/buildenv/${BUILDENV_NAME}"
-          if [ ! -d "$BUILDENV_PATH" ]; then
+          # Check if buildenv is already present and valid
+          VCPKG_CMAKE=$(find "${BUILDENV_PATH}" -name "vcpkg.cmake" -type f -path "*/scripts/buildsystems/*" 2>/dev/null | head -1)
+          if [ -d "$BUILDENV_PATH" ] && [ -n "$VCPKG_CMAKE" ]; then
+            echo "Buildenv already exists and is valid at ${BUILDENV_PATH}"
+          else
+            if [ -d "$BUILDENV_PATH" ]; then
+              echo "Buildenv directory exists but vcpkg.cmake not found, re-downloading"
+              rm -rf "${BUILDENV_PATH}"
+            fi
             BUILDENV_URL="https://downloads.mixxx.org/dependencies/2.7/Linux/${BUILDENV_NAME}.zip"
             echo "Downloading ${BUILDENV_URL} ..."
             curl -fsSL -o "/tmp/${BUILDENV_NAME}.zip" "$BUILDENV_URL"
@@ -99,9 +107,7 @@ jobs:
             mkdir -p "/home/runner/buildenv"
             unzip -o "/tmp/${BUILDENV_NAME}.zip" -d "/home/runner/buildenv/"
             echo "Buildenv downloaded and extracted to ${BUILDENV_PATH}"
-            ls -la "${BUILDENV_PATH}/"
-          else
-            echo "Buildenv already exists at ${BUILDENV_PATH}"
+            ls -la "${BUILDENV_PATH}/" 2>/dev/null || echo "BUILDENV_PATH does not exist after extraction"
           fi
           # Verify vcpkg root
           VCPKG_CMAKE=$(find "${BUILDENV_PATH}" -name "vcpkg.cmake" -type f -path "*/scripts/buildsystems/*" 2>/dev/null | head -1)
