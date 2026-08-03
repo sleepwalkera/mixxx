@@ -66,7 +66,16 @@ jobs:
             libprotobuf-dev libgmock-dev libgtest-dev libbenchmark-dev \
             libgl1-mesa-dev qtkeychain-qt6-dev libid3tag0-dev libmsgsl-dev \
             libfuse2t64 fonts-open-sans \
-            libqt6svg6
+            qt6-svg-plugins \
+            qml6-module-qtquick-controls \
+            qml6-module-qtquick-dialogs \
+            qml6-module-qtquick-layouts \
+            qml6-module-qtquick-shapes \
+            qml6-module-qtquick-templates \
+            qml6-module-qtquick-window \
+            qml6-module-qt-labs-qmlmodels \
+            qml6-module-qt-labs-folderlistmodel \
+            qml6-module-qtmultimedia
 
       - name: "Install appimagetool"
         run: |
@@ -107,7 +116,7 @@ jobs:
         run: |
           export APPIMAGE_EXTRACT_AND_RUN=1
           export QML_SOURCES_PATHS=/tmp/AppDir/usr/share/mixxx/qml
-          export QML_IMPORT_PATHS=/tmp/AppDir/usr/share/mixxx/controllers/TraktorKontrolS4MK3Screens
+          export QML_IMPORT_PATHS=/tmp/AppDir/usr/share/mixxx/qml:/tmp/AppDir/usr/share/mixxx/controllers/TraktorKontrolS4MK3Screens
           export QML_IMPORT_PATHS=/tmp/AppDir/usr/share/mixxx/controllers
           /tmp/linuxdeploy --appdir /tmp/AppDir \
             --executable /tmp/AppDir/usr/bin/mixxx \
