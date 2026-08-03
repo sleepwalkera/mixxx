@@ -84,71 +84,16 @@ jobs:
           path: /home/runner/buildenv
           key: ${{ runner.os }}-buildenv-${{ env.BUILDENV_NAME }}
 
-      - name: "Download buildenv"
-        if: ${{ runner.os == 'Linux' }}
-        run: |
-          source tools/linux_appimage_buildenv.sh name
-          BUILDENV_NAME="${BUILDENV_NAME:-mixxx-deps-2.7-x64-linux-1c20f84a}"
-          BUILDENV_PATH="/home/runner/buildenv/${BUILDENV_NAME}"
-          # Check if buildenv is already present and valid
-          VCPKG_CMAKE=$(find "${BUILDENV_PATH}" -name "vcpkg.cmake" -type f -path "*/scripts/buildsystems/*" 2>/dev/null | head -1)
-          if [ -d "$BUILDENV_PATH" ] && [ -n "$VCPKG_CMAKE" ]; then
-            echo "Buildenv already exists and is valid at ${BUILDENV_PATH}"
-          else
-            if [ -d "$BUILDENV_PATH" ]; then
-              echo "Buildenv directory exists but vcpkg.cmake not found, re-downloading"
-              rm -rf "${BUILDENV_PATH}"
-            fi
-            BUILDENV_URL="https://downloads.mixxx.org/dependencies/2.7/Linux/${BUILDENV_NAME}.zip"
-            echo "Downloading ${BUILDENV_URL} ..."
-            python3 -c "
-import urllib.request, sys
-url = sys.argv[1]
-path = sys.argv[2]
-req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36'})
-with urllib.request.urlopen(req) as r, open(path, 'wb') as f:
-    while True:
-        chunk = r.read(65536)
-        if not chunk:
-            break
-        f.write(chunk)
-print('Downloaded', path)
-" "$BUILDENV_URL" "/tmp/${BUILDENV_NAME}.zip"
-            ls -la "/tmp/${BUILDENV_NAME}.zip"
-            echo "Extracting ..."
-            mkdir -p "/home/runner/buildenv"
-            unzip -o "/tmp/${BUILDENV_NAME}.zip" -d "/home/runner/buildenv/"
-            echo "Buildenv downloaded and extracted to ${BUILDENV_PATH}"
-            ls -la "${BUILDENV_PATH}/" 2>/dev/null || echo "BUILDENV_PATH does not exist after extraction"
-          fi
-          # Verify vcpkg root
-          VCPKG_CMAKE=$(find "${BUILDENV_PATH}" -name "vcpkg.cmake" -type f -path "*/scripts/buildsystems/*" 2>/dev/null | head -1)
-          if [ -n "$VCPKG_CMAKE" ]; then
-            MIXXX_VCPKG_ROOT_VAL=$(dirname "$VCPKG_CMAKE" | xargs dirname)
-            echo "Vcpkg root found: ${MIXXX_VCPKG_ROOT_VAL}"
-            echo "MIXXX_VCPKG_ROOT=${MIXXX_VCPKG_ROOT_VAL}" >> "${GITHUB_ENV}"
-          else
-            echo "Warning: Could not find vcpkg.cmake in buildenv"
-            find "${BUILDENV_PATH}" -name "vcpkg.cmake" -type f 2>/dev/null || echo "No vcpkg.cmake found anywhere in buildenv"
-            echo "Buildenv top-level contents:"
-            ls -la "${BUILDENV_PATH}/" 2>/dev/null || echo "BUILDENV_PATH does not exist"
-            echo "Buildenv base contents:"
-            ls -la /home/runner/buildenv/ 2>/dev/null
-          fi
-        env:
-          BUILDENV_BASEPATH: /home/runner/buildenv
-
       - name: "Debug buildenv"
         run: |
           echo "BUILDENV_NAME: ${BUILDENV_NAME}"
           echo "MIXXX_VCPKG_ROOT: ${MIXXX_VCPKG_ROOT}"
           echo "Buildenv path contents:"
-          ls -la /home/runner/buildenv/
+          ls -la /home/runner/buildenv/ 2>/dev/null || echo "buildenv base not found"
           if [ -n "${MIXXX_VCPKG_ROOT}" ]; then
             echo "MIXXX_VCPKG_ROOT contents:"
             ls -la "${MIXXX_VCPKG_ROOT}/" 2>/dev/null || echo "Does not exist"
-            echo "Searching for vcpkg.cmake in MIXXX_VCPKG_ROOT:"
-            find "${MIXXX_VCPKG_ROOT}" -name "vcpkg.cmake" -type f 2>/dev/null || echo "Not found"
+            find "${MIXXX_VCPKG_ROOT}" -name "vcpkg.cmake" -type f 2>/dev/null || echo "vcpkg.cmake not found"
           fi
           echo "Searching for vcpkg.cmake in buildenv:"
           find /home/runner/buildenv -name "vcpkg.cmake" -type f 2>/dev/null || echo "Not found"

@@ -89,6 +89,7 @@ case "$1" in
         echo_exported_variables() {
             echo "BUILDENV_NAME=${BUILDENV_NAME}"
             echo "BUILDENV_BASEPATH=${BUILDENV_BASEPATH}"
+            echo "BUILDENV_URL=${BUILDENV_URL}"
             echo "MIXXX_VCPKG_ROOT=${MIXXX_VCPKG_ROOT}"
             echo "VCPKG_TARGET_TRIPLET=${VCPKG_TARGET_TRIPLET}"
         }

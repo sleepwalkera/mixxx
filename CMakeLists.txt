@@ -151,6 +151,7 @@ if(DEFINED ENV{BUILDENV_URL}
         DOWNLOAD ${BUILDENV_URL} "${BUILDENV_BASEPATH}/${BUILDENV_NAME}.zip"
         SHOW_PROGRESS
         TLS_VERIFY ON
+        HTTPHEADER "User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
       )
     else()
       # Reference to suppress intentionally unused variable warnings
