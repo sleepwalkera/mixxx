@@ -2631,6 +2631,13 @@ if(UNIX AND NOT APPLE)
     DESTINATION "${CMAKE_INSTALL_DATADIR}/applications"
   )
 
+  # AppImage-specific .desktop file (with simplified Exec=mixxx)
+  install(
+    FILES "${CMAKE_CURRENT_SOURCE_DIR}/packaging/appimage/org.mixxx.Mixxx.desktop"
+    DESTINATION "${CMAKE_INSTALL_DATADIR}/applications"
+    RENAME "mixxx-appimage.desktop"
+  )
+
   # Icon files for menu entry
   install(
     DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/res/images/icons/"
