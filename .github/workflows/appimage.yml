@@ -53,7 +53,8 @@ jobs:
             desktop-file-utils \
             libfuse2t64 unzip \
             libsqlite3-dev libssl-dev libprotobuf-dev protobuf-compiler \
-            libgl1-mesa-dev
+            libgl1-mesa-dev \
+            libxkbcommon-dev libxkbcommon-x11-dev
 
       - name: "Install appimagetool"
         run: |
