@@ -58,7 +58,7 @@ jobs:
             libxcb-glx0-dev libxcb-cursor-dev libxcb-keysyms1-dev \
             libxcb-randr0-dev libxcb-xfixes0-dev libxcb-xinerama0-dev \
             libxcb-xkb-dev libxcb-shm0-dev libxcb-icccm4-dev \
-            libxcb-image0-dev libxcb-util-dev libxcb-sync-dev libx11-xcb-dev libxrender-dev libxcb-xinput-dev libupower-glib-dev libsm-dev
+            libxcb-image0-dev libxcb-util-dev libxcb-sync-dev libx11-xcb-dev libxrender-dev libxcb-xinput-dev libupower-glib-dev libsm-dev libxrandr-dev libxext-dev
 
       - name: "Install appimagetool"
         run: |
