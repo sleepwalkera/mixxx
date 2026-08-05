@@ -71,14 +71,14 @@ jobs:
         uses: actions/cache@v6
         with:
           path: /home/runner/.cache/ccache
-          key: ${{ matrix.os }}-appimage-qt6-${{ github.run_number }}
+          key: ${{ matrix.os }}-appimage-qt6-ccache-${{ hashFiles('CMakeLists.txt', 'cmake/modules/FindSndFile.cmake', 'packaging/CPackConfig.cmake') }}
           restore-keys: |
-            ${{ matrix.os }}-appimage-qt6
+            ${{ matrix.os }}-appimage-qt6-ccache-
 
       - name: "Set up ccache"
         run: |
           ccache --zero-stats
-          ccache --max-size=2G
+          ccache --max-size=4G
 
       - name: "Get build environment name"
         run: source tools/linux_appimage_buildenv.sh name
