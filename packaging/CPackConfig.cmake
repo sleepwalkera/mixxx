@@ -46,7 +46,7 @@ endif()
 if(CPACK_GENERATOR STREQUAL "AppImage")
   set(CPACK_APPIMAGE_DESKTOP_FILE "mixxx-appimage.desktop")
   set(CPACK_APPIMAGE_NO_APPSTREAM ON)
-  set(CPACK_PACKAGE_ICON "${CMAKE_CURRENT_SOURCE_DIR}/res/images/icons/256x256/apps/mixxx.png")
+  set(CPACK_PACKAGE_ICON "mixxx.png")
 endif()
 
 if(CPACK_GENERATOR STREQUAL "External")
