@@ -67,15 +67,14 @@ jobs:
           chmod +x /tmp/appimagetool
           sudo mv /tmp/appimagetool /usr/local/bin/
 
-      - name: "[Ubuntu/macOS] Set up GitHub cache for ccache"
-        uses: actions/cache@v6
+      - name: "[Ubuntu/macOS] Restore ccache"
+        uses: actions/cache/restore@v6
         with:
           path: /home/runner/.cache/ccache
           key: ${{ matrix.os }}-appimage-qt6-ccache-${{ hashFiles('CMakeLists.txt', 'cmake/modules/FindSndFile.cmake', 'packaging/CPackConfig.cmake') }}
           restore-keys: |
             ${{ matrix.os }}-appimage-qt6-ccache-
             ${{ matrix.os }}-appimage-qt6-
-          save-always: true
 
       - name: "Set up ccache"
         run: |
@@ -87,12 +86,11 @@ jobs:
         env:
           BUILDENV_BASEPATH: /home/runner/buildenv
 
-      - name: "Set up build environment cache"
-        uses: actions/cache@v6
+      - name: "Restore build environment cache"
+        uses: actions/cache/restore@v6
         with:
           path: /home/runner/buildenv
           key: ${{ runner.os }}-buildenv-${{ env.BUILDENV_NAME }}
-          save-always: true
 
       - name: "Validate buildenv cache"
         run: |
@@ -168,8 +166,14 @@ jobs:
 
       - name: "Package"
         run: |
-          cpack -G AppImage -V
-        working-directory: build
+          # Install to staging AppDir
+          cmake --install build --prefix build/staging 2>&1 | tail -5
+          # Copy icon to AppDir root for appimagetool
+          cp build/staging/share/icons/hicolor/256x256/apps/mixxx.png build/staging/.DirIcon
+          # Run appimagetool (extract if FUSE unavailable)
+          export APPIMAGE_EXTRACT_AND_RUN=1
+          appimagetool build/staging build/Mixxx-x86_64.AppImage -v 2>&1 | tail -20
+        working-directory: .
 
       - name: "Upload AppImage"
         uses: actions/upload-artifact@v4
@@ -177,3 +181,15 @@ jobs:
           name: Mixxx-AppImage-${{ matrix.arch }}
           path: build/*.AppImage
           if-no-files-found: error
+
+      - name: "Save ccache"
+        uses: actions/cache/save@v6
+        with:
+          path: /home/runner/.cache/ccache
+          key: ${{ matrix.os }}-appimage-qt6-ccache-${{ hashFiles('CMakeLists.txt', 'cmake/modules/FindSndFile.cmake', 'packaging/CPackConfig.cmake') }}
+
+      - name: "Save build environment cache"
+        uses: actions/cache/save@v6
+        with:
+          path: /home/runner/buildenv
+          key: ${{ runner.os }}-buildenv-${{ env.BUILDENV_NAME }}
