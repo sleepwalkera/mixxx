@@ -44,7 +44,6 @@ if(CPACK_GENERATOR STREQUAL "DEB")
 endif()
 
 if(CPACK_GENERATOR STREQUAL "AppImage")
-  set(CPACK_APPIMAGE_DESKTOP_FILE "mixxx-appimage.desktop")
   set(CPACK_APPIMAGE_NO_APPSTREAM ON)
   set(CPACK_PACKAGE_ICON "mixxx.png")
 endif()
