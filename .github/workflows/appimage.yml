@@ -171,8 +171,8 @@ jobs:
           cmake --install build --prefix build/staging
           # Copy icon to AppDir root for appimagetool
           cp build/staging/share/icons/hicolor/256x256/apps/mixxx.png build/staging/.DirIcon
-          # Run appimagetool (extract if FUSE unavailable)
-          APPIMAGE_EXTRACT_AND_RUN=1 appimagetool -v build/staging build/Mixxx-x86_64.AppImage
+          # Run appimagetool with --appimage-extract-and-run to avoid FUSE dependency
+          /usr/local/bin/appimagetool --appimage-extract-and-run -v build/staging build/Mixxx-x86_64.AppImage
           # List output files for debugging
           ls -la build/Mixxx-*.AppImage 2>/dev/null || echo "No AppImage file found in build/"
         working-directory: .
