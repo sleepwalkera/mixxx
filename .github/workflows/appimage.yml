@@ -62,9 +62,9 @@ jobs:
 
       - name: "Install appimagetool"
         run: |
-          curl -fsSL -o /tmp/appimagetool \
-            "https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-${{ matrix.arch }}.AppImage"
-          chmod +x /tmp/appimagetool
+          curl -fsSL -o /tmp/appimagetool.tar.gz \
+            "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-${{ matrix.arch }}.tar.gz"
+          tar -xzf /tmp/appimagetool.tar.gz -C /tmp
           sudo mv /tmp/appimagetool /usr/local/bin/
 
       - name: "[Ubuntu/macOS] Restore ccache"
@@ -171,8 +171,8 @@ jobs:
           cmake --install build --prefix build/staging
           # Copy icon to AppDir root for appimagetool
           cp build/staging/share/icons/hicolor/256x256/apps/mixxx.png build/staging/.DirIcon
-          # Run appimagetool with --appimage-extract-and-run to avoid FUSE dependency
-          /usr/local/bin/appimagetool --appimage-extract-and-run -v build/staging build/Mixxx-x86_64.AppImage
+          # Run appimagetool (native binary, no FUSE needed)
+          /usr/local/bin/appimagetool -v build/staging build/Mixxx-x86_64.AppImage
           # List output files for debugging
           ls -la build/Mixxx-*.AppImage 2>/dev/null || echo "No AppImage file found in build/"
         working-directory: .
