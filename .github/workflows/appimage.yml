@@ -170,10 +170,13 @@ jobs:
       - name: "Package"
         run: |
           set -o pipefail
-          # Install to staging AppDir
-          cmake --install build --prefix build/staging
+          # Install to staging AppDir using DESTDIR
+          mkdir -p build/staging
+          DESTDIR=build/staging cmake --build build --target install
           # Copy icon to AppDir root for appimagetool
-          cp build/staging/share/icons/hicolor/256x256/apps/mixxx.png build/staging/.DirIcon
+          cp build/staging/usr/local/share/icons/hicolor/256x256/apps/mixxx.png build/staging/.DirIcon 2>/dev/null || \
+            cp build/staging/share/icons/hicolor/256x256/apps/mixxx.png build/staging/.DirIcon 2>/dev/null || \
+            echo "Warning: icon not found in staging"
           # Run appimagetool (native binary, no FUSE needed)
           /usr/local/bin/appimagetool -v build/staging build/Mixxx-x86_64.AppImage
           # List output files for debugging
