@@ -162,7 +162,8 @@ jobs:
             -DQML=ON \
             -DINSTALL_USER_UDEV_RULES=OFF \
             -DWARNINGS_FATAL=OFF \
-            -DCMAKE_CXX_FLAGS_RELWITHDEBINFO="-O1 -g -DNDEBUG"
+            -DCMAKE_CXX_FLAGS_RELWITHDEBINFO="-O1 -g -DNDEBUG" \
+            -DCMAKE_INSTALL_PREFIX=/
 
       - name: "Build"
         run: cmake --build build -j$(nproc)
