@@ -170,8 +170,9 @@ jobs:
       - name: "Package"
         run: |
           set -o pipefail
-          # Install to staging AppDir using absolute prefix path
-          cmake --install build --prefix "$(pwd)/build/staging"
+          # Install to staging AppDir
+          mkdir -p build/staging
+          DESTDIR="$(pwd)/build/staging" cmake --build build --target install
           # Copy icon to AppDir root for appimagetool
           cp build/staging/share/icons/hicolor/256x256/apps/mixxx.png build/staging/.DirIcon
           # Run appimagetool (native binary, no FUSE needed)
