@@ -83,6 +83,8 @@ jobs:
         run: |
           ccache --zero-stats
           ccache --max-size=4G
+          # Add ccache compiler wrapper to PATH
+          echo "/usr/lib/ccache" >> $GITHUB_PATH
 
       - name: "Get build environment name"
         run: source tools/linux_appimage_buildenv.sh name
