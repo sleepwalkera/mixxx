@@ -191,12 +191,14 @@ jobs:
           if-no-files-found: error
 
       - name: "Save ccache"
+        if: always()
         uses: actions/cache/save@v6
         with:
           path: /home/runner/.cache/ccache
           key: ${{ matrix.os }}-appimage-qt6-ccache-${{ hashFiles('CMakeLists.txt', 'cmake/modules/FindSndFile.cmake', 'packaging/CPackConfig.cmake') }}
 
       - name: "Save build environment cache"
+        if: always()
         uses: actions/cache/save@v6
         with:
           path: /home/runner/buildenv
