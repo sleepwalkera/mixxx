@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Install appimagetool.
+# Install appimagetool (native binary, extracted from the AppImage).
 #
-# Rather than extracting the raw binary (whose shared-library dependencies vary
-# across runner images), we keep the AppImage and wrap it with
-# --appimage-extract-and-run. This runs the embedded runtime which bundles its
-# own libraries, avoiding issues like a missing libgpgme.so.11 on newer runners.
+# The extracted binary may depend on shared libraries that are not present on
+# all runner images (e.g. libgpgme.so.11).  To handle this, we also copy any
+# bundled libraries from the AppImage into /usr/local/lib so that the dynamic
+# linker can find them.
 #
 # Usage:
 #   packaging/appimage/install-appimagetool.sh [arch]
@@ -28,17 +28,32 @@ URL="https://github.com/AppImage/AppImageKit/releases/download/continuous/appima
 
 echo "Downloading appimagetool for ${APPIMAGE_ARCH}..."
 curl -fsSL --connect-timeout 15 --max-time 120 \
-  -o /opt/appimagetool.AppImage "${URL}"
-chmod +x /opt/appimagetool.AppImage
+  -o /tmp/appimagetool.AppImage "${URL}"
+chmod +x /tmp/appimagetool.AppImage
 
-# Create a wrapper that runs the AppImage via --appimage-extract-and-run.
-# This avoids extracting the raw binary and depending on system libs.
-cat > /usr/local/bin/appimagetool <<'EOF'
-#!/bin/bash
-# Run appimagetool from its AppImage using the embedded runtime.
-# APPIMAGE_EXTRACT_AND_RUN=1 forces extraction to a temp dir (no FUSE needed).
-exec env APPIMAGE_EXTRACT_AND_RUN=1 /opt/appimagetool.AppImage --appimage-extract-and-run "$@"
-EOF
-chmod +x /usr/local/bin/appimagetool
+echo "Extracting native binary and bundled libraries..."
+/tmp/appimagetool.AppImage --appimage-extract >/dev/null 2>&1
 
-echo "appimagetool installed to /usr/local/bin/appimagetool"
+# Install the main binary.
+sudo mv squashfs-root/usr/bin/appimagetool /usr/local/bin/
+
+# If the AppImage bundles any shared libraries, copy them too so the binary
+# can find them at runtime (e.g. libgpgme.so.11 on newer Ubuntu runners).
+if [ -d squashfs-root/usr/lib ]; then
+  sudo mkdir -p /usr/local/lib
+  # Copy only actual shared libraries (files and symlinks), not the whole tree.
+  find squashfs-root/usr/lib \( -name '*.so*' -type f -o -name '*.so*' -type l \) 2>/dev/null \
+    | while read -r lib; do
+        sudo cp -a "$lib" /usr/local/lib/
+      done
+  # Update the dynamic linker cache so the libraries are found.
+  sudo ldconfig 2>/dev/null || true
+fi
+
+rm -rf squashfs-root /tmp/appimagetool.AppImage
+
+echo "appimagetool installed to /usr/local/bin/"
+
+# Verify the binary works.
+/usr/local/bin/appimagetool --version 2>/dev/null && echo "appimagetool is functional" \
+  || echo "Warning: appimagetool may have missing dependencies (see errors above). Check the build." >&2
