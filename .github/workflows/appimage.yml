@@ -89,18 +89,6 @@ jobs:
           path: ${{ matrix.buildenv_basepath }}
           key: ${{ runner.os }}-buildenv-${{ env.BUILDENV_NAME }}
 
-      - name: "[Linux] Validate build environment cache"
-        run: |
-          if [ -d "${{ matrix.buildenv_basepath }}" ]; then
-            VCPKG_CMAKE=$(find "${{ matrix.buildenv_basepath }}" -name "vcpkg.cmake" -type f -path "*/scripts/buildsystems/*" 2>/dev/null | head -1)
-            if [ -z "${VCPKG_CMAKE}" ]; then
-              echo "Buildenv cache is corrupted (vcpkg.cmake not found), clearing cache"
-              rm -rf "${{ matrix.buildenv_basepath }}"
-            else
-              echo "Buildenv cache is valid, vcpkg.cmake found at: ${VCPKG_CMAKE}"
-            fi
-          fi
-
       - name: "[Linux] Set up build environment"
         run: ${{ matrix.buildenv_script }} setup
         env:
