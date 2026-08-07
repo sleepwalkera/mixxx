@@ -198,8 +198,13 @@ jobs:
             'Categories=Qt;AudioVideo;Audio;Midi;Mixer;Player;Recorder;Sequencer;' \
             > build/staging/mixxx-appimage.desktop
           # Copy icon to AppDir root for appimagetool
+          # appimagetool needs both .DirIcon (for the AppImage file icon) and
+          # mixxx.png (for the desktop file's Icon= key) in the AppDir root.
           ICON=$(find build/staging -name "mixxx.png" -path "*/256x256/*" 2>/dev/null | head -1)
-          if [ -n "$ICON" ]; then cp "$ICON" build/staging/.DirIcon; fi
+          if [ -n "$ICON" ]; then
+            cp "$ICON" build/staging/.DirIcon
+            cp "$ICON" build/staging/mixxx.png
+          fi
           # Run appimagetool (native binary, no FUSE needed)
           /usr/local/bin/appimagetool -v build/staging build/Mixxx-x86_64.AppImage
           # List output files for debugging
