@@ -22,17 +22,33 @@ on:
 
 jobs:
   build:
-    name: Build AppImage
+    name: ${{ matrix.name }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - name: Linux x86_64
+          - name: AppImage Linux x86_64
             os: ubuntu-26.04
             arch: x86_64
-          # - name: Linux aarch64
+            buildenv_basepath: /home/runner/buildenv
+            buildenv_script: tools/linux_appimage_buildenv.sh
+            compiler_cache: ccache
+            compiler_cache_path: /home/runner/.cache/ccache
+            compiler_cache_id: appimage-qt6
+            artifacts_name: Mixxx AppImage
+            artifacts_path: build/*.AppImage
+            artifacts_slug: appimage-linux
+          # - name: AppImage Linux aarch64
           #   os: ubuntu-26.04-arm
           #   arch: aarch64
+          #   buildenv_basepath: /home/runner/buildenv
+          #   buildenv_script: tools/linux_appimage_buildenv.sh
+          #   compiler_cache: ccache
+          #   compiler_cache_path: /home/runner/.cache/ccache
+          #   compiler_cache_id: appimage-qt6
+          #   artifacts_name: Mixxx AppImage
+          #   artifacts_path: build/*.AppImage
+          #   artifacts_slug: appimage-linux-arm64
 
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
@@ -45,7 +61,7 @@ jobs:
       - name: "Ensure that all tags are fetched"
         run: git fetch origin --force --tags
 
-      - name: "Install system dependencies"
+      - name: "[Linux] Install system dependencies"
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
@@ -58,111 +74,62 @@ jobs:
             libxcb-glx0-dev libxcb-cursor-dev libxcb-keysyms1-dev \
             libxcb-randr0-dev libxcb-xfixes0-dev libxcb-xinerama0-dev \
             libxcb-xkb-dev libxcb-shm0-dev libxcb-icccm4-dev \
-            libxcb-image0-dev libxcb-util-dev libxcb-sync-dev libx11-xcb-dev libxrender-dev libxcb-xinput-dev libupower-glib-dev libsm-dev libxrandr-dev libxext-dev libudev-dev
+            libxcb-image0-dev libxcb-util-dev libxcb-sync-dev \
+            libx11-xcb-dev libxrender-dev libxcb-xinput-dev \
+            libupower-glib-dev libsm-dev libxrandr-dev \
+            libxext-dev libudev-dev
 
-      - name: "Install appimagetool"
-        run: |
-          curl -fsSL -o /tmp/appimagetool.AppImage \
-            "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-${{ matrix.arch }}.AppImage"
-          chmod +x /tmp/appimagetool.AppImage
-          # Extract the AppImage (Type 2) to get the native binary
-          /tmp/appimagetool.AppImage --appimage-extract 2>/dev/null
-          sudo mv squashfs-root/usr/bin/appimagetool /usr/local/bin/
-          rm -rf squashfs-root /tmp/appimagetool.AppImage
+      - name: "[Linux] Install appimagetool"
+        run: packaging/appimage/install-appimagetool.sh ${{ matrix.arch }}
 
-      - name: "[Ubuntu/macOS] Restore ccache"
-        uses: actions/cache/restore@v6
-        with:
-          path: /home/runner/.cache/ccache
-          key: ${{ matrix.os }}-appimage-qt6-ccache-${{ hashFiles('CMakeLists.txt', 'cmake/modules/FindSndFile.cmake', 'packaging/CPackConfig.cmake') }}
-          restore-keys: |
-            ${{ matrix.os }}-appimage-qt6-ccache-
-            ${{ matrix.os }}-appimage-qt6-
-
-      - name: "Set up ccache"
-        run: |
-          ccache --zero-stats
-          ccache --max-size=4G
-
-      - name: "Get build environment name"
-        run: source tools/linux_appimage_buildenv.sh name
+      - name: "[Linux] Get build environment name"
+        run: ${{ matrix.buildenv_script }} name
         env:
-          BUILDENV_BASEPATH: /home/runner/buildenv
+          BUILDENV_BASEPATH: ${{ matrix.buildenv_basepath }}
 
-      - name: "Restore build environment cache"
+      - name: "[Linux] Restore build environment cache"
         uses: actions/cache/restore@v6
         with:
-          path: /home/runner/buildenv
+          path: ${{ matrix.buildenv_basepath }}
           key: ${{ runner.os }}-buildenv-${{ env.BUILDENV_NAME }}
 
-      - name: "Validate buildenv cache"
+      - name: "[Linux] Validate build environment cache"
         run: |
-          if [ -d "/home/runner/buildenv" ]; then
-            VCPKG_CMAKE=$(find /home/runner/buildenv -name "vcpkg.cmake" -type f -path "*/scripts/buildsystems/*" 2>/dev/null | head -1)
-            if [ -z "$VCPKG_CMAKE" ]; then
+          if [ -d "${{ matrix.buildenv_basepath }}" ]; then
+            VCPKG_CMAKE=$(find "${{ matrix.buildenv_basepath }}" -name "vcpkg.cmake" -type f -path "*/scripts/buildsystems/*" 2>/dev/null | head -1)
+            if [ -z "${VCPKG_CMAKE}" ]; then
               echo "Buildenv cache is corrupted (vcpkg.cmake not found), clearing cache"
-              rm -rf /home/runner/buildenv
+              rm -rf "${{ matrix.buildenv_basepath }}"
             else
               echo "Buildenv cache is valid, vcpkg.cmake found at: ${VCPKG_CMAKE}"
             fi
           fi
 
-      - name: "Set up build environment"
-        run: source tools/linux_appimage_buildenv.sh setup
+      - name: "[Linux] Set up build environment"
+        run: ${{ matrix.buildenv_script }} setup
         env:
-          BUILDENV_BASEPATH: /home/runner/buildenv
+          BUILDENV_BASEPATH: ${{ matrix.buildenv_basepath }}
 
-      - name: "Fix MIXXX_VCPKG_ROOT path"
-        run: |
-          echo "MIXXX_VCPKG_ROOT=/home/runner/buildenv/$BUILDENV_NAME" >> $GITHUB_ENV
-          echo "MIXXX_VCPKG_ROOT set to /home/runner/buildenv/$BUILDENV_NAME"
+      - name: "[Linux] Set up GitHub cache for ccache"
+        uses: actions/cache@v6
+        with:
+          path: ${{ matrix.compiler_cache_path }}
+          key: ${{ matrix.os }}-${{ matrix.compiler_cache_id }}-${{ hashFiles('CMakeLists.txt', 'cmake/modules/FindSndFile.cmake', 'packaging/CPackConfig.cmake') }}
+          restore-keys: |
+            ${{ matrix.os }}-${{ matrix.compiler_cache_id }}-
+            ${{ matrix.os }}-${{ matrix.compiler_cache_id }}-
 
-      - name: "Create FindXKB.cmake for buildenv compatibility"
+      - name: "[Linux] Set up ccache"
         run: |
-          mkdir -p /tmp/xkb-cmake
-          python3 -c "
-          content = '''if(NOT TARGET XKB::XKB)
-            find_package(PkgConfig QUIET)
-            if(PkgConfig_FOUND)
-              pkg_check_modules(xkbcommon IMPORTED_TARGET xkbcommon)
-              if(xkbcommon_FOUND)
-                add_library(XKB::XKB ALIAS PkgConfig::xkbcommon)
-                set(XKB_FOUND TRUE)
-                set(XKB_LIBRARY \${xkbcommon_LIBRARIES})
-                set(XKB_INCLUDE_DIR \${xkbcommon_INCLUDE_DIRS})
-                set(XKB_VERSION \${xkbcommon_VERSION})
-              endif()
-            endif()
-          endif()
-          if(NOT XKB_FOUND)
-            find_path(XKB_INCLUDE_DIR xkbcommon/xkbcommon.h)
-            find_library(XKB_LIBRARY xkbcommon)
-            if(XKB_INCLUDE_DIR AND XKB_LIBRARY)
-              set(XKB_FOUND TRUE)
-            endif()
-          endif()
-          if(XKB_FOUND)
-            if(NOT TARGET XKB::XKB)
-              add_library(XKB::XKB UNKNOWN IMPORTED)
-              set_target_properties(XKB::XKB PROPERTIES
-                IMPORTED_LOCATION \"\${XKB_LIBRARY}\"
-                INTERFACE_INCLUDE_DIRECTORIES \"\${XKB_INCLUDE_DIR}\"
-              )
-            endif()
-          endif()
-          mark_as_advanced(XKB_LIBRARY XKB_INCLUDE_DIR)
-          '''
-          with open('/tmp/xkb-cmake/FindXKB.cmake', 'w') as f:
-              f.write(content)
-          print('FindXKB.cmake created')
-          "
+          ${{ matrix.compiler_cache }} --zero-stats
+          ${{ matrix.compiler_cache }} --max-size=4G
 
       - name: "Configure"
         run: |
           cmake -B build -G "Unix Makefiles" \
             -DCMAKE_BUILD_TYPE=RelWithDebInfo \
             -DCMAKE_TOOLCHAIN_FILE="${MIXXX_VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" \
-            -DCMAKE_MODULE_PATH="/tmp/xkb-cmake" \
+            -DCMAKE_MODULE_PATH="${GITHUB_WORKSPACE}/packaging/appimage" \
             -DQT6=ON \
             -DQML=ON \
             -DINSTALL_USER_UDEV_RULES=OFF \
@@ -173,67 +140,31 @@ jobs:
       - name: "Build"
         run: cmake --build build -j$(nproc)
 
-      - name: "Package"
+      - name: "[Linux] Print compiler cache stats"
         run: |
-          set -o pipefail
-          # Install to staging AppDir
-          mkdir -p build/staging
-          DESTDIR="$(pwd)/build/staging" cmake --build build --target install
-          # Create a proper desktop file for appimagetool (appimagetool's desktop-file-validate
-          # is strict about format and may fail on the CMake-generated file).
-          # Use printf + shell continuation (not a heredoc) so the content stays within the
-          # YAML block scalar's indentation — a heredoc body at column 0 would be a YAML syntax
-          # error, and a heredoc terminator with leading whitespace breaks the shell match.
-          printf '%s\n' \
-            '[Desktop Entry]' \
-            'Version=1.0' \
-            'Name=Mixxx' \
-            'GenericName=Digital DJ interface' \
-            'Comment=Play music files and perform live DJ mixes with tempo sync, looping and effects.' \
-            'Exec=mixxx' \
-            'Icon=mixxx' \
-            'Terminal=false' \
-            'Type=Application' \
-            'StartupNotify=true' \
-            'Categories=Qt;AudioVideo;Audio;Midi;Mixer;Player;Recorder;Sequencer;' \
-            > build/staging/mixxx-appimage.desktop
-          # Copy icon to AppDir root for appimagetool
-          # appimagetool needs both .DirIcon (for the AppImage file icon) and
-          # mixxx.png (for the desktop file's Icon= key) in the AppDir root.
-          ICON=$(find build/staging -name "mixxx.png" -path "*/256x256/*" 2>/dev/null | head -1)
-          if [ -n "$ICON" ]; then
-            cp "$ICON" build/staging/.DirIcon
-            cp "$ICON" build/staging/mixxx.png
-          fi
-          # Strip debug symbols from the mixxx binary to minimize AppImage size.
-          # The vcpkg buildenv statically links all dependencies (Qt6, QML, ALSA, etc.)
-          # into a single binary, making it very large with debug symbols.
-          if [ -f "build/staging/usr/bin/mixxx" ]; then
-            strip --strip-unneeded build/staging/usr/bin/mixxx
-          fi
-          # Run appimagetool (native binary, no FUSE needed)
-          /usr/local/bin/appimagetool -v build/staging build/Mixxx-x86_64.AppImage
-          # List output files for debugging
-          ls -la build/Mixxx-*.AppImage 2>/dev/null || echo "No AppImage file found in build/"
-        working-directory: .
+          ${{ matrix.compiler_cache }} --show-stats
+          ${{ matrix.compiler_cache }} --cleanup
 
-      - name: "Upload AppImage"
+      - name: "Package"
+        run: packaging/appimage/build-appimage.sh build ${{ matrix.arch }}
+
+      - name: "[Linux] Upload AppImage"
         uses: actions/upload-artifact@v4
         with:
           name: Mixxx-AppImage-${{ matrix.arch }}
-          path: build/*.AppImage
+          path: ${{ matrix.artifacts_path }}
           if-no-files-found: error
 
-      - name: "Save ccache"
+      - name: "[Linux] Save ccache"
         if: always()
         uses: actions/cache/save@v6
         with:
-          path: /home/runner/.cache/ccache
-          key: ${{ matrix.os }}-appimage-qt6-ccache-${{ hashFiles('CMakeLists.txt', 'cmake/modules/FindSndFile.cmake', 'packaging/CPackConfig.cmake') }}
+          path: ${{ matrix.compiler_cache_path }}
+          key: ${{ matrix.os }}-${{ matrix.compiler_cache_id }}-${{ hashFiles('CMakeLists.txt', 'cmake/modules/FindSndFile.cmake', 'packaging/CPackConfig.cmake') }}
 
-      - name: "Save build environment cache"
+      - name: "[Linux] Save build environment cache"
         if: always()
         uses: actions/cache/save@v6
         with:
-          path: /home/runner/buildenv
+          path: ${{ matrix.buildenv_basepath }}
           key: ${{ runner.os }}-buildenv-${{ env.BUILDENV_NAME }}

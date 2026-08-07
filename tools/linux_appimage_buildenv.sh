@@ -65,21 +65,10 @@ case "$1" in
     setup)
         BUILDENV_PATH="${BUILDENV_BASEPATH}/${BUILDENV_NAME}"
 
-        # Determine the vcpkg root by finding vcpkg.cmake
-        if [ -n "${MIXXX_VCPKG_ROOT}" ]; then
-            echo "MIXXX_VCPKG_ROOT already set to ${MIXXX_VCPKG_ROOT}, preserving"
-        elif [ -d "${BUILDENV_PATH}" ]; then
-            MIXXX_VCPKG_ROOT=$(find "${BUILDENV_PATH}" -name "vcpkg.cmake" -type f -path "*/scripts/buildsystems/*" 2>/dev/null | head -1 | xargs -r dirname | xargs -r dirname || true)
-            if [ -z "${MIXXX_VCPKG_ROOT}" ]; then
-                echo "Warning: Could not find vcpkg.cmake in BUILDENV_PATH, using BUILDENV_PATH directly"
-                MIXXX_VCPKG_ROOT="${BUILDENV_PATH}"
-            else
-                echo "MIXXX_VCPKG_ROOT set to ${MIXXX_VCPKG_ROOT}"
-            fi
-        else
-            echo "Warning: BUILDENV_PATH ${BUILDENV_PATH} does not exist"
-            MIXXX_VCPKG_ROOT="${BUILDENV_PATH}"
-        fi
+        # vcpkg.cmake is expected at BUILDENV_PATH/scripts/buildsystems/vcpkg.cmake,
+        # so MIXXX_VCPKG_ROOT points directly to the extracted buildenv directory.
+        # This matches the pattern used by macos_buildenv.sh and android_buildenv.sh.
+        export MIXXX_VCPKG_ROOT="${BUILDENV_PATH}"
 
         export BUILDENV_NAME
         export BUILDENV_BASEPATH
