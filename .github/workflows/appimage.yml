@@ -67,7 +67,7 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             ccache g++ make cmake pkg-config patchelf file \
             desktop-file-utils \
-            libfuse2t64 libgpgme11t64 unzip squashfs-tools \
+            libfuse2t64 unzip squashfs-tools \
             libsqlite3-dev libssl-dev libprotobuf-dev protobuf-compiler \
             libgl1-mesa-dev \
             libxkbcommon-dev libxkbcommon-x11-dev \

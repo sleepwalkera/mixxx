@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
-# Download and install appimagetool (native binary, extracted from the AppImage
-# to avoid FUSE dependency on CI runners).
+# Install appimagetool.
+#
+# Rather than extracting the raw binary (whose shared-library dependencies vary
+# across runner images), we keep the AppImage and wrap it with
+# --appimage-extract-and-run. This runs the embedded runtime which bundles its
+# own libraries, avoiding issues like a missing libgpgme.so.11 on newer runners.
 #
 # Usage:
 #   packaging/appimage/install-appimagetool.sh [arch]
@@ -24,12 +28,17 @@ URL="https://github.com/AppImage/AppImageKit/releases/download/continuous/appima
 
 echo "Downloading appimagetool for ${APPIMAGE_ARCH}..."
 curl -fsSL --connect-timeout 15 --max-time 120 \
-  -o /tmp/appimagetool.AppImage "${URL}"
-chmod +x /tmp/appimagetool.AppImage
+  -o /opt/appimagetool.AppImage "${URL}"
+chmod +x /opt/appimagetool.AppImage
 
-echo "Extracting native binary..."
-/tmp/appimagetool.AppImage --appimage-extract >/dev/null 2>&1
-sudo mv squashfs-root/usr/bin/appimagetool /usr/local/bin/
-rm -rf squashfs-root /tmp/appimagetool.AppImage
+# Create a wrapper that runs the AppImage via --appimage-extract-and-run.
+# This avoids extracting the raw binary and depending on system libs.
+cat > /usr/local/bin/appimagetool <<'EOF'
+#!/bin/bash
+# Run appimagetool from its AppImage using the embedded runtime.
+# APPIMAGE_EXTRACT_AND_RUN=1 forces extraction to a temp dir (no FUSE needed).
+exec env APPIMAGE_EXTRACT_AND_RUN=1 /opt/appimagetool.AppImage --appimage-extract-and-run "$@"
+EOF
+chmod +x /usr/local/bin/appimagetool
 
-echo "appimagetool installed to /usr/local/bin/"
+echo "appimagetool installed to /usr/local/bin/appimagetool"
