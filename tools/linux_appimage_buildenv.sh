@@ -65,9 +65,8 @@ case "$1" in
     setup)
         BUILDENV_PATH="${BUILDENV_BASEPATH}/${BUILDENV_NAME}"
 
-        # vcpkg.cmake is expected at BUILDENV_PATH/scripts/buildsystems/vcpkg.cmake,
-        # so MIXXX_VCPKG_ROOT points directly to the extracted buildenv directory.
-        # This matches the pattern used by macos_buildenv.sh and android_buildenv.sh.
+        # vcpkg.cmake is at BUILDENV_PATH/scripts/buildsystems/, matching the
+        # macos/android buildenv pattern.
         export MIXXX_VCPKG_ROOT="${BUILDENV_PATH}"
 
         export BUILDENV_NAME

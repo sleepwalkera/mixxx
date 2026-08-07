@@ -1,6 +1,4 @@
-# Add XKB::XKB imported target for the AppImage build.
-# The vcpkg buildenv does not bundle the Qt6 XKB CMake config, so we rely on
-# pkg-config to discover the system libxkbcommon (installed via apt).
+# FindXKB module for the vcpkg buildenv, which does not bundle Qt6's XKB config.
 if(NOT TARGET XKB::XKB)
   find_package(PkgConfig QUIET)
   if(PkgConfig_FOUND)

@@ -1,16 +1,8 @@
 #!/usr/bin/env bash
-# Install appimagetool.
+# Download appimagetool. AppImages run directly via FUSE (libfuse2t64), so no
+# extraction is needed.
 #
-# We simply download the appimagetool AppImage and make it executable.  AppImages
-# run directly (via FUSE, which is provided by the libfuse2t64 system dependency),
-# so no extraction or library handling is needed — the AppImage bundles its own
-# runtime and libraries.
-#
-# Usage:
-#   packaging/appimage/install-appimagetool.sh [arch]
-#
-# The arch argument defaults to the output of `uname -m`.  Supported values:
-#   x86_64, aarch64
+# Usage: install-appimagetool.sh [arch]   (arch defaults to uname -m)
 set -euo pipefail
 
 ARCH="${1:-$(uname -m)}"
