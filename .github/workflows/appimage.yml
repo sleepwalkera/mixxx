@@ -179,8 +179,12 @@ jobs:
           # Install to staging AppDir
           mkdir -p build/staging
           DESTDIR="$(pwd)/build/staging" cmake --build build --target install
+          # Copy desktop file to AppDir root for appimagetool
+          DESKTOP=$(find build/staging -name "mixxx-appimage.desktop" 2>/dev/null | head -1)
+          if [ -n "$DESKTOP" ]; then cp "$DESKTOP" build/staging/; fi
           # Copy icon to AppDir root for appimagetool
-          cp build/staging/share/icons/hicolor/256x256/apps/mixxx.png build/staging/.DirIcon
+          ICON=$(find build/staging -name "mixxx.png" -path "*/256x256/*" 2>/dev/null | head -1)
+          if [ -n "$ICON" ]; then cp "$ICON" build/staging/.DirIcon; fi
           # Run appimagetool (native binary, no FUSE needed)
           /usr/local/bin/appimagetool -v build/staging build/Mixxx-x86_64.AppImage
           # List output files for debugging
