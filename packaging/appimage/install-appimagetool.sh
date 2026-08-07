@@ -24,7 +24,7 @@ case "${ARCH}" in
     ;;
 esac
 
-URL="https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-${APPIMAGE_ARCH}.AppImage"
+URL="https://github.com/AppImage/AppImageKit/releases/download/12/appimagetool-${APPIMAGE_ARCH}.AppImage"
 
 echo "Downloading appimagetool for ${APPIMAGE_ARCH}..."
 curl -fsSL --connect-timeout 15 --max-time 120 \
