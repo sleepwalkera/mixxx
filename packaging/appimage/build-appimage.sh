@@ -7,7 +7,7 @@
 # Arguments:
 #   build_dir         Path to the CMake build directory (e.g., build/)
 #   arch              Architecture string for the output filename (e.g., x86_64)
-#   appimagetool_path Path to the appimagetool binary (default: /usr/local/bin/appimagetool)
+#   appimagetool_path Path to the appimagetool binary (default: /opt/appimagetool.AppImage)
 #
 # Environment:
 #   The Configure step must have set CMAKE_INSTALL_PREFIX=/ (the DESTDIR staging
@@ -29,19 +29,14 @@ echo "Installing to staging AppDir..."
 mkdir -p "${APPDIR}"
 DESTDIR="${APPDIR}" cmake --build "${BUILD_DIR}" --target install
 
-# ---- Step 2: Locate / generate the desktop file ----
-# appimagetool requires a .desktop file in the AppDir root.
-# Prefer the CMake-generated AppImage desktop file, fall back to the
-# standalone adapt-desktop-file.sh script.
-DESKTOP_INSTALLED=$(find "${APPDIR}" -name "mixxx-appimage.desktop" -path "*/applications/*" 2>/dev/null | head -1)
-if [ -n "${DESKTOP_INSTALLED}" ]; then
-  echo "Using CMake-generated desktop file: ${DESKTOP_INSTALLED}"
-  cp "${DESKTOP_INSTALLED}" "${APPDIR}/mixxx-appimage.desktop"
+# ---- Step 2: Copy the CMake-generated desktop file to the AppDir root ----
+DESKTOP_SRC="${APPDIR}/usr/share/applications/mixxx-appimage.desktop"
+if [ -f "${DESKTOP_SRC}" ]; then
+  cp "${DESKTOP_SRC}" "${APPDIR}/mixxx-appimage.desktop"
+  echo "Using desktop file: ${DESKTOP_SRC}"
 else
-  echo "CMake-generated desktop file not found, adapting from source..."
-  "${SCRIPT_DIR}/adapt-desktop-file.sh" \
-    "${PROJECT_DIR}/res/linux/org.mixxx.Mixxx.desktop" \
-    "${APPDIR}/mixxx-appimage.desktop"
+  echo "Error: desktop file not found at ${DESKTOP_SRC}" >&2
+  exit 1
 fi
 
 # ---- Step 3: Copy icon to AppDir root ----

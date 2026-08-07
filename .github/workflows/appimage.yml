@@ -35,9 +35,7 @@ jobs:
             compiler_cache: ccache
             compiler_cache_path: /home/runner/.cache/ccache
             compiler_cache_id: appimage-qt6
-            artifacts_name: Mixxx AppImage
             artifacts_path: build/*.AppImage
-            artifacts_slug: appimage-linux
           # - name: AppImage Linux aarch64
           #   os: ubuntu-26.04-arm
           #   arch: aarch64
@@ -46,9 +44,7 @@ jobs:
           #   compiler_cache: ccache
           #   compiler_cache_path: /home/runner/.cache/ccache
           #   compiler_cache_id: appimage-qt6
-          #   artifacts_name: Mixxx AppImage
           #   artifacts_path: build/*.AppImage
-          #   artifacts_slug: appimage-linux-arm64
 
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
@@ -116,7 +112,6 @@ jobs:
           path: ${{ matrix.compiler_cache_path }}
           key: ${{ matrix.os }}-${{ matrix.compiler_cache_id }}-${{ hashFiles('CMakeLists.txt', 'cmake/modules/FindSndFile.cmake', 'packaging/CPackConfig.cmake') }}
           restore-keys: |
-            ${{ matrix.os }}-${{ matrix.compiler_cache_id }}-
             ${{ matrix.os }}-${{ matrix.compiler_cache_id }}-
 
       - name: "[Linux] Set up ccache"
