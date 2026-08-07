@@ -181,7 +181,16 @@ jobs:
           DESTDIR="$(pwd)/build/staging" cmake --build build --target install
           # Copy desktop file to AppDir root for appimagetool
           DESKTOP=$(find build/staging -name "mixxx-appimage.desktop" 2>/dev/null | head -1)
-          if [ -n "$DESKTOP" ]; then cp "$DESKTOP" build/staging/; fi
+          if [ -n "$DESKTOP" ]; then
+            cp "$DESKTOP" build/staging/
+            # Ensure required keys exist (appimagetool validates strictly)
+            if ! grep -q "^Type=" build/staging/mixxx-appimage.desktop 2>/dev/null; then
+              echo "Type=Application" >> build/staging/mixxx-appimage.desktop
+            fi
+            if ! grep -q "^Name=" build/staging/mixxx-appimage.desktop 2>/dev/null; then
+              echo "Name=Mixxx" >> build/staging/mixxx-appimage.desktop
+            fi
+          fi
           # Copy icon to AppDir root for appimagetool
           ICON=$(find build/staging -name "mixxx.png" -path "*/256x256/*" 2>/dev/null | head -1)
           if [ -n "$ICON" ]; then cp "$ICON" build/staging/.DirIcon; fi
