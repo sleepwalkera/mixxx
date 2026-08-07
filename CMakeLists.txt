@@ -2653,7 +2653,7 @@ if(UNIX AND NOT APPLE)
   # AppImage-specific .desktop file (generated from original with simplified Exec=mixxx)
   set(MIXXX_APPIMAGE_DESKTOP_FILE "${CMAKE_CURRENT_BINARY_DIR}/mixxx-appimage.desktop")
   file(READ "${CMAKE_CURRENT_SOURCE_DIR}/res/linux/org.mixxx.Mixxx.desktop" MIXXX_APPIMAGE_DESKTOP_CONTENT)
-  string(REGEX REPLACE "\nExec=.*" "\nExec=mixxx" MIXXX_APPIMAGE_DESKTOP_CONTENT "${MIXXX_APPIMAGE_DESKTOP_CONTENT}")
+  string(REGEX REPLACE "\nExec=[^\n]*" "\nExec=mixxx" MIXXX_APPIMAGE_DESKTOP_CONTENT "${MIXXX_APPIMAGE_DESKTOP_CONTENT}")
   file(WRITE "${MIXXX_APPIMAGE_DESKTOP_FILE}" "${MIXXX_APPIMAGE_DESKTOP_CONTENT}")
   install(
     FILES "${MIXXX_APPIMAGE_DESKTOP_FILE}"
