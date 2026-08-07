@@ -167,7 +167,7 @@ jobs:
             -DQML=ON \
             -DINSTALL_USER_UDEV_RULES=OFF \
             -DWARNINGS_FATAL=OFF \
-            -DCMAKE_CXX_FLAGS_RELWITHDEBINFO="-O1 -g -DNDEBUG" \
+            -DCMAKE_CXX_FLAGS_RELWITHDEBINFO="-O2 -DNDEBUG" \
             -DCMAKE_INSTALL_PREFIX=/
 
       - name: "Build"
@@ -204,6 +204,12 @@ jobs:
           if [ -n "$ICON" ]; then
             cp "$ICON" build/staging/.DirIcon
             cp "$ICON" build/staging/mixxx.png
+          fi
+          # Strip debug symbols from the mixxx binary to minimize AppImage size.
+          # The vcpkg buildenv statically links all dependencies (Qt6, QML, ALSA, etc.)
+          # into a single binary, making it very large with debug symbols.
+          if [ -f "build/staging/usr/bin/mixxx" ]; then
+            strip --strip-unneeded build/staging/usr/bin/mixxx
           fi
           # Run appimagetool (native binary, no FUSE needed)
           /usr/local/bin/appimagetool -v build/staging build/Mixxx-x86_64.AppImage
