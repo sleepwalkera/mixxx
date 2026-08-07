@@ -2661,13 +2661,6 @@ if(UNIX AND NOT APPLE)
     RENAME "mixxx-appimage.desktop"
   )
 
-  # AppImage icon file (installed to AppDir root for appimagetool)
-  install(
-    FILES "${CMAKE_CURRENT_SOURCE_DIR}/res/images/icons/256x256/apps/mixxx.png"
-    DESTINATION "."
-    RENAME "mixxx.png"
-  )
-
   # Icon files for menu entry
   install(
     DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/res/images/icons/"
