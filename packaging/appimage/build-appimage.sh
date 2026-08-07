@@ -15,7 +15,7 @@
 set -euo pipefail
 
 # ---- Argument parsing ----
-BUILD_DIR="$1"
+BUILD_DIR="$(cd "$1" && pwd)"
 ARCH="$2"
 APPIMAGETOOL="${3:-/usr/local/bin/appimagetool}"
 
