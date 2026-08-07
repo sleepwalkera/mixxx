@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Install appimagetool (native binary, extracted from the AppImage).
+# Install appimagetool.
 #
-# The extracted binary may depend on shared libraries that are not present on
-# all runner images (e.g. libgpgme.so.11).  We keep the entire extracted
-# directory tree and use a wrapper that sets LD_LIBRARY_PATH so the binary
-# finds its bundled libraries without polluting the system library path.
+# We simply download the appimagetool AppImage and make it executable.  AppImages
+# run directly (via FUSE, which is provided by the libfuse2t64 system dependency),
+# so no extraction or library handling is needed — the AppImage bundles its own
+# runtime and libraries.
 #
 # Usage:
 #   packaging/appimage/install-appimagetool.sh [arch]
@@ -28,26 +28,7 @@ URL="https://github.com/AppImage/AppImageKit/releases/download/continuous/appima
 
 echo "Downloading appimagetool for ${APPIMAGE_ARCH}..."
 curl -fsSL --connect-timeout 15 --max-time 120 \
-  -o /tmp/appimagetool.AppImage "${URL}"
-chmod +x /tmp/appimagetool.AppImage
+  -o /opt/appimagetool.AppImage "${URL}"
+chmod +x /opt/appimagetool.AppImage
 
-echo "Extracting..."
-/tmp/appimagetool.AppImage --appimage-extract >/dev/null 2>&1
-
-# Keep the entire extracted tree under /opt/appimagetool so the binary can
-# find its bundled libraries via LD_LIBRARY_PATH.
-sudo rm -rf /opt/appimagetool
-sudo mv squashfs-root /opt/appimagetool
-
-# Create a wrapper that sets the library path before invoking the binary.
-cat > /usr/local/bin/appimagetool <<'WRAPPER'
-#!/bin/bash
-APPIMAGETOOL_ROOT="/opt/appimagetool"
-exec env LD_LIBRARY_PATH="${APPIMAGETOOL_ROOT}/usr/lib:${LD_LIBRARY_PATH}" \
-  "${APPIMAGETOOL_ROOT}/usr/bin/appimagetool" "$@"
-WRAPPER
-chmod +x /usr/local/bin/appimagetool
-
-rm -rf /tmp/appimagetool.AppImage
-
-echo "appimagetool installed to /usr/local/bin/appimagetool"
+echo "appimagetool installed to /opt/appimagetool.AppImage"
