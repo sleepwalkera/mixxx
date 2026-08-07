@@ -180,20 +180,23 @@ jobs:
           mkdir -p build/staging
           DESTDIR="$(pwd)/build/staging" cmake --build build --target install
           # Create a proper desktop file for appimagetool (appimagetool's desktop-file-validate
-          # is strict about format and may fail on the CMake-generated file)
-          cat > build/staging/mixxx-appimage.desktop << 'DESKTOP_EOF'
-[Desktop Entry]
-Version=1.0
-Name=Mixxx
-GenericName=Digital DJ interface
-Comment=Play music files and perform live DJ mixes with tempo sync, looping and effects.
-Exec=mixxx
-Icon=mixxx
-Terminal=false
-Type=Application
-StartupNotify=true
-Categories=Qt;AudioVideo;Audio;Midi;Mixer;Player;Recorder;Sequencer;
-DESKTOP_EOF
+          # is strict about format and may fail on the CMake-generated file).
+          # Use printf + shell continuation (not a heredoc) so the content stays within the
+          # YAML block scalar's indentation — a heredoc body at column 0 would be a YAML syntax
+          # error, and a heredoc terminator with leading whitespace breaks the shell match.
+          printf '%s\n' \
+            '[Desktop Entry]' \
+            'Version=1.0' \
+            'Name=Mixxx' \
+            'GenericName=Digital DJ interface' \
+            'Comment=Play music files and perform live DJ mixes with tempo sync, looping and effects.' \
+            'Exec=mixxx' \
+            'Icon=mixxx' \
+            'Terminal=false' \
+            'Type=Application' \
+            'StartupNotify=true' \
+            'Categories=Qt;AudioVideo;Audio;Midi;Mixer;Player;Recorder;Sequencer;' \
+            > build/staging/mixxx-appimage.desktop
           # Copy icon to AppDir root for appimagetool
           ICON=$(find build/staging -name "mixxx.png" -path "*/256x256/*" 2>/dev/null | head -1)
           if [ -n "$ICON" ]; then cp "$ICON" build/staging/.DirIcon; fi
