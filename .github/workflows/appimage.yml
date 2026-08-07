@@ -112,6 +112,11 @@ jobs:
         env:
           BUILDENV_BASEPATH: /home/runner/buildenv
 
+      - name: "Fix MIXXX_VCPKG_ROOT path"
+        run: |
+          echo "MIXXX_VCPKG_ROOT=/home/runner/buildenv/$BUILDENV_NAME" >> $GITHUB_ENV
+          echo "MIXXX_VCPKG_ROOT set to /home/runner/buildenv/$BUILDENV_NAME"
+
       - name: "Create FindXKB.cmake for buildenv compatibility"
         run: |
           mkdir -p /tmp/xkb-cmake
