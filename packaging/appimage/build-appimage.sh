@@ -33,8 +33,8 @@ DESTDIR="${APPDIR}" cmake --build "${BUILD_DIR}" --target install
 # appimagetool requires a .desktop file in the AppDir root.
 # Prefer the CMake-generated AppImage desktop file, fall back to the
 # standalone adapt-desktop-file.sh script.
-DESKTOP_INSTALLED="${APPDIR}/usr/share/applications/mixxx-appimage.desktop"
-if [ -f "${DESKTOP_INSTALLED}" ]; then
+DESKTOP_INSTALLED=$(find "${APPDIR}" -name "mixxx-appimage.desktop" -path "*/applications/*" 2>/dev/null | head -1)
+if [ -n "${DESKTOP_INSTALLED}" ]; then
   echo "Using CMake-generated desktop file: ${DESKTOP_INSTALLED}"
   cp "${DESKTOP_INSTALLED}" "${APPDIR}/mixxx-appimage.desktop"
 else
@@ -46,8 +46,12 @@ fi
 
 # ---- Step 3: Copy icon to AppDir root ----
 # appimagetool needs both .DirIcon (AppImage file icon) and mixxx.png (for the
-# desktop file's Icon= key) in the AppDir root.
-ICON=$(find "${APPDIR}" -name "mixxx.png" -path "*/256x256/*" 2>/dev/null | head -1)
+# desktop file's Icon= key) in the AppDir root. Prefer the 256x256 icon, fall
+# back to any installed size.
+ICON=$(find "${APPDIR}" -name "mixxx.png" -path "*256x256*" 2>/dev/null | head -1)
+if [ -z "${ICON}" ]; then
+  ICON=$(find "${APPDIR}" -name "mixxx.png" 2>/dev/null | head -1)
+fi
 if [ -n "${ICON}" ]; then
   cp "${ICON}" "${APPDIR}/.DirIcon"
   cp "${ICON}" "${APPDIR}/mixxx.png"
