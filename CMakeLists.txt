@@ -4976,15 +4976,6 @@ if(FAAD)
   else()
     target_link_libraries(mixxx-lib PRIVATE MP4::MP4)
   endif()
-  # libfaad is loaded at runtime via QLibrary, so bundle it for AppImage.
-  if(MIXXX_APPIMAGE)
-    find_library(FAAD_LIBRARY NAMES faad)
-    if(FAAD_LIBRARY)
-      install(FILES "${FAAD_LIBRARY}" DESTINATION "${CMAKE_INSTALL_LIBDIR}")
-    else()
-      message(WARNING "Could not find libfaad for AppImage packaging")
-    endif()
-  endif()
 endif()
 
 # FDK-AAC is loaded dynamically at runtime by EncoderFdkAac using QLibrary,
@@ -5017,13 +5008,26 @@ if(FdkAac_FOUND)
         DESTINATION "${MIXXX_INSTALL_PREFIX}/Contents/Frameworks"
       )
     endif()
-    # Bundle fdk-aac for AppImage (loaded at runtime via QLibrary).
-    if(MIXXX_APPIMAGE)
-      install(FILES "${FdkAac_LIBRARY}" DESTINATION "${CMAKE_INSTALL_LIBDIR}")
     endif()
-  endif()
 else()
   message(STATUS "Could NOT find fdk-aac (FdkAac_FOUND is FALSE)")
+endif()
+
+# Bundle codec libraries that Mixxx loads at runtime via QLibrary (dlopen).
+# The vcpkg buildenv provides static (.a) versions, but QLibrary needs the
+# shared (.so.*) files with versioned sonames (e.g. libfaad.so.2).
+if(MIXXX_APPIMAGE)
+  set(_suffixes "${CMAKE_FIND_LIBRARY_SUFFIXES}")
+  set(CMAKE_FIND_LIBRARY_SUFFIXES ".so.2;.so.1")
+  find_library(FAAD_LIBRARY NAMES faad)
+  find_library(FDKAAC_LIBRARY NAMES fdk-aac)
+  set(CMAKE_FIND_LIBRARY_SUFFIXES "${_suffixes}")
+  if(FAAD_LIBRARY)
+    install(FILES "${FAAD_LIBRARY}" DESTINATION "${CMAKE_INSTALL_LIBDIR}")
+  endif()
+  if(FDKAAC_LIBRARY)
+    install(FILES "${FDKAAC_LIBRARY}" DESTINATION "${CMAKE_INSTALL_LIBDIR}")
+  endif()
 endif()
 
 # Google PerfTools
