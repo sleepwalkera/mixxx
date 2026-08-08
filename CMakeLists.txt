@@ -415,6 +415,7 @@ endif()
 include(CMakeDependentOption)
 
 option(QT6 "Build with Qt6" ON)
+option(MIXXX_APPIMAGE "Build for AppImage distribution (bundle dlopen dependencies)" OFF)
 cmake_dependent_option(
   QML
   "Build with QML"
@@ -4975,6 +4976,15 @@ if(FAAD)
   else()
     target_link_libraries(mixxx-lib PRIVATE MP4::MP4)
   endif()
+  # libfaad is loaded at runtime via QLibrary, so bundle it for AppImage.
+  if(MIXXX_APPIMAGE)
+    find_library(FAAD_LIBRARY NAMES faad)
+    if(FAAD_LIBRARY)
+      install(FILES "${FAAD_LIBRARY}" DESTINATION "${CMAKE_INSTALL_LIBDIR}")
+    else()
+      message(WARNING "Could not find libfaad for AppImage packaging")
+    endif()
+  endif()
 endif()
 
 # FDK-AAC is loaded dynamically at runtime by EncoderFdkAac using QLibrary,
@@ -5006,6 +5016,10 @@ if(FdkAac_FOUND)
         DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/lib/fdk-aac-install/"
         DESTINATION "${MIXXX_INSTALL_PREFIX}/Contents/Frameworks"
       )
+    endif()
+    # Bundle fdk-aac for AppImage (loaded at runtime via QLibrary).
+    if(MIXXX_APPIMAGE)
+      install(FILES "${FdkAac_LIBRARY}" DESTINATION "${CMAKE_INSTALL_LIBDIR}")
     endif()
   endif()
 else()
