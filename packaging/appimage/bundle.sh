@@ -72,16 +72,18 @@ EXCLUDE_LIBS=(
     "libthread_db.so"
     "libgcc_s.so"
     "libstdc++.so.6"
-    # OpenGL/GLX/EGL — provided by host system Mesa
-    "libGLX"
-    "libEGL"
-    "libOpenGL"
-    "libGLESv1_CM"
-    "libGLESv2"
-    "libGLdispatch"
-    "libGLX_mesa"
-    "libEGL_mesa"
-    "libGLX_indirect"
+    # OpenGL/GLX/EGL — bundle these from the build environment to ensure
+    # they are compatible with the bundled Qt and other libraries.
+    # The host Mesa may have dependency version mismatches with bundled libs.
+    # "libGLX"
+    # "libEGL"
+    # "libOpenGL"
+    # "libGLESv1_CM"
+    # "libGLESv2"
+    # "libGLdispatch"
+    # "libGLX_mesa"
+    # "libEGL_mesa"
+    # "libGLX_indirect"
 )
 
 # ---- Helper: Check if a library should be excluded ----
@@ -215,8 +217,10 @@ echo ""
 echo "Step 3: Copying Qt plugins..."
 
 if [ -d "$SYS_QT_PLUGINS_DIR" ]; then
-    # Copy platform plugins (essential for Qt GUI)
-    for plugdir in platforms imageformats styles audio multimedia sqldrivers; do
+    # Copy platform plugins (essential for Qt GUI).
+    # xcbglintegrations contains libqxcb-glx-integration.so / libqxcb-egl-integration.so
+    # without which Qt cannot create an OpenGL context on X11.
+    for plugdir in platforms imageformats styles audio multimedia sqldrivers xcbglintegrations; do
         src="${SYS_QT_PLUGINS_DIR}/${plugdir}"
         if [ -d "$src" ]; then
             mkdir -p "${APPDIR_PLUGINS_DIR}/${plugdir}"

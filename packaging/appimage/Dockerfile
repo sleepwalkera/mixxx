@@ -1,6 +1,7 @@
 # Mixxx AppImage Builder
 # Base image version is set via build arg (passed from build.sh).
-# Debian 12 (bookworm) for 2.5.x, Debian 13 (trixie) for main/2.7.x.
+# Debian 12 (bookworm) and 13 (trixie) are both supported.
+# Debian 12 gives broader glibc compatibility (2.36 vs 2.41).
 ARG DEBIAN_VERSION=12
 FROM debian:${DEBIAN_VERSION}-slim
 
@@ -37,7 +38,10 @@ RUN apt-get update && \
         librubberband-dev \
         libshout-idjc-dev \
         # MIDI/HID/USB
-        libhidapi-dev \
+        # libhidapi-dev is not listed here because we build it from source
+        # below. On Debian 12 (bookworm) the package is 0.13.1, but Mixxx
+        # requires >= 0.14.0. On Debian 13 (trixie) the package is 0.14.0,
+        # but building from source once is simpler than conditionalizing.
         libusb-1.0-0-dev \
         libudev-dev \
         # PipeWire / ALSA / JACK
@@ -103,6 +107,21 @@ RUN \
     make -j$(nproc) && make install && \
     rm -rf /tmp/svgplugin && \
     echo "Qt6 SVG plugin built and installed"
+
+# Build hidapi from source (needed on Debian 12 where the package is 0.13.1
+# but harmless on Debian 13 where it simply overwrites the 0.14.0 package).
+# Mixxx requires hidapi >= 0.14.0 for bus type information.
+RUN curl -fsSL --connect-timeout 15 --max-time 60 \
+    -o /tmp/hidapi-0.14.0.tar.gz \
+    "https://github.com/libusb/hidapi/archive/refs/tags/hidapi-0.14.0.tar.gz" && \
+    cd /tmp && tar xzf hidapi-0.14.0.tar.gz && \
+    cd /tmp/hidapi-hidapi-0.14.0 && \
+    mkdir -p build && cd build && \
+    cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr && \
+    cmake --build . --parallel $(nproc) && \
+    cmake --install . && \
+    rm -rf /tmp/hidapi* && \
+    echo "hidapi 0.14.0 built and installed"
 
 # Download appimagetool into the image (avoids re-download per build)
 # Uses ALL_PROXY build arg (passed from build.sh, only affects curl)

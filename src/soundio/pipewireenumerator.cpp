@@ -534,7 +534,9 @@ void PipewireEnumerator::callback(const spa_io_position* pos) {
 
     Trace trace("SoundDevicePw::callbackProcessClkRef");
 
-#if PW_CHECK_VERSION(0, 3, 50)
+// The xrun field was added in PipeWire 1.0.0. Earlier versions
+// (including 0.3.77) have padding[8] instead.
+#if PW_CHECK_VERSION(1, 0, 0)
     if (pos->clock.xrun > xrun_duration) {
         xrun_duration = pos->clock.xrun;
         m_pSoundManager->underflowHappened(6);

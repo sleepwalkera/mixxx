@@ -24,8 +24,11 @@ set -euo pipefail
 # ============================================================
 
 # Debian version for the build container.
-# Debian 12 (bookworm) for 2.5.x, Debian 13 (trixie) for main/2.7.x.
-DEBIAN_VERSION="13"
+# Both Debian 12 (bookworm) and 13 (trixie) are supported.
+# Debian 12 gives broader glibc compatibility (2.36 vs 2.41).
+# Debian 13 provides newer Qt/FFmpeg packages.
+# Set to "13" for newer packages, or "12" for wider compatibility.
+DEBIAN_VERSION="12"
 
 # Docker image name and tag
 IMAGE_NAME="mixxx-appimage-builder:debian${DEBIAN_VERSION}"
@@ -166,8 +169,9 @@ if [ "${INSIDE_MIXXX_BUILDER:-}" = "1" ]; then
 
     # ---- Step 8: Prepare desktop file ----
     echo "=== Preparing desktop file ==="
-    # Desktop file is pre-processed (Exec=mixxx) in packaging/appimage/
-    cp /src/packaging/appimage/org.mixxx.Mixxx.desktop /build/AppDir/org.mixxx.Mixxx.desktop
+    # Use the upstream desktop file, just change Exec=mixxx for AppImage
+    sed 's/^Exec=.*/Exec=mixxx/' /src/res/linux/org.mixxx.Mixxx.desktop \
+        > /build/AppDir/org.mixxx.Mixxx.desktop
     chmod 644 /build/AppDir/org.mixxx.Mixxx.desktop
 
     # ---- Step 9: Prepare icon ----
