@@ -5048,37 +5048,6 @@ else()
   message(STATUS "Could NOT find fdk-aac (FdkAac_FOUND is FALSE)")
 endif()
 
-# Bundle codec libraries that Mixxx loads at runtime via QLibrary (dlopen).
-# The vcpkg buildenv provides static (.a) versions, but QLibrary needs the
-# shared (.so.*) files with versioned sonames (e.g. libfaad.so.2).
-if(MIXXX_APPIMAGE)
-  set(_suffixes "${CMAKE_FIND_LIBRARY_SUFFIXES}")
-
-  # libfaad: loader always expects libfaad.so.2
-  set(CMAKE_FIND_LIBRARY_SUFFIXES ".so.2")
-  find_library(FAAD_LIBRARY NAMES faad)
-  if(FAAD_LIBRARY)
-    install(FILES "${FAAD_LIBRARY}" DESTINATION "${CMAKE_INSTALL_LIBDIR}")
-  endif()
-
-  # libfdk-aac: loader probes .so.1 first, then .so.2 — try both
-  unset(FDKAAC_LIBRARY CACHE)
-  foreach(_soname IN ITEMS 1 2)
-    set(CMAKE_FIND_LIBRARY_SUFFIXES ".so.${_soname}")
-    find_library(FDKAAC_LIBRARY NAMES fdk-aac)
-    if(FDKAAC_LIBRARY)
-      break()
-    endif()
-  endforeach()
-  if(FDKAAC_LIBRARY)
-    install(FILES "${FDKAAC_LIBRARY}" DESTINATION "${CMAKE_INSTALL_LIBDIR}")
-  else()
-    message(WARNING "libfdk-aac not found — fdk-aac encoding will be unavailable in the AppImage")
-  endif()
-
-  set(CMAKE_FIND_LIBRARY_SUFFIXES "${_suffixes}")
-endif()
-
 # Google PerfTools
 option(GPERFTOOLS "Google PerfTools libtcmalloc linkage" OFF)
 option(GPERFTOOLSPROFILER "Google PerfTools libprofiler linkage" OFF)

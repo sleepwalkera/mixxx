@@ -95,6 +95,19 @@ case "$1" in
         # Install system dependencies needed for the AppImage build.
         if [ -n "${GITHUB_ENV}" ]; then
             sudo apt-get update
+
+            # Uninstall any pre-installed Qt6 or FFmpeg system packages so that
+            # CMake cannot accidentally pick them up instead of the dependencies
+            # from the vcpkg buildenv. These are not part of the AppImage build
+            # and bundling system libraries would also violate the licensing
+            # constraints of the published buildenv.
+            qt_ffmpeg_pkgs=$(dpkg-query -W -f='${Package}\n' 2>/dev/null \
+                | grep -E '^qt6-|^libqt6|^ffmpeg$|^libavcodec|^libavdevice|^libavfilter|^libavformat|^libavutil|^libswscale|^libswresample|^libpostproc' || true)
+            if [ -n "${qt_ffmpeg_pkgs}" ]; then
+                # shellcheck disable=SC2086
+                sudo apt-get remove --purge -y ${qt_ffmpeg_pkgs} || true
+            fi
+
             sudo apt-get install -y --no-install-recommends \
                 ccache \
                 g++ \
@@ -107,8 +120,6 @@ case "$1" in
                 libfuse2t64 \
                 unzip \
                 squashfs-tools \
-                libfaad-dev \
-                libfdk-aac-dev \
                 libglib2.0-dev \
                 libsecret-1-dev \
                 libgcrypt20-dev \
@@ -140,6 +151,20 @@ case "$1" in
                 libxrandr-dev \
                 libxext-dev \
                 libudev-dev
+
+            # The CPack AppImage generator needs a recent CMake, so download the
+            # latest release and prepend it to PATH (it overrides the distro CMake).
+            case "${HOST_ARCH}" in
+                x86_64)  CMAKE_TARBALL="cmake-4.4.2-linux-x86_64.tar.gz"   ;;
+                aarch64) CMAKE_TARBALL="cmake-4.4.2-linux-aarch64.tar.gz" ;;
+                *)       CMAKE_TARBALL=""                                 ;;
+            esac
+            if [ -n "${CMAKE_TARBALL}" ]; then
+                sudo mkdir -p /opt/cmake
+                curl -fsSL "https://cmake.org/files/v4.4/${CMAKE_TARBALL}" \
+                    | sudo tar -xz -C /opt/cmake --strip-components=1
+                echo "/opt/cmake/bin" >> "${GITHUB_PATH}"
+            fi
         fi
 
         echo_exported_variables() {
