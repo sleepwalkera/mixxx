@@ -176,6 +176,7 @@ case "$1" in
                 -o /usr/local/bin/appimagetool \
                 "${APPIMAGETOOL_URL}"
             sudo chmod +x /usr/local/bin/appimagetool
+        fi
 
         echo_exported_variables() {
             echo "BUILDENV_NAME=${BUILDENV_NAME}"
