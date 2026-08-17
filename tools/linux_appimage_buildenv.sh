@@ -165,7 +165,17 @@ case "$1" in
                     | sudo tar -xz -C /opt/cmake --strip-components=1
                 echo "/opt/cmake/bin" >> "${GITHUB_PATH}"
             fi
-        fi
+
+            # appimagetool is required by the CPack AppImage generator, which searches
+            # for an executable named "appimagetool" in the PATH (or via
+            # CPACK_APPIMAGE_TOOL_EXECUTABLE).  Install it to /usr/local/bin
+            # which is in the default PATH.  Running it on the runner requires
+            # FUSE (libfuse2t64 is installed above).
+            APPIMAGETOOL_URL="https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-${HOST_ARCH}.AppImage"
+            sudo curl -fsSL --connect-timeout 15 --max-time 120 \
+                -o /usr/local/bin/appimagetool \
+                "${APPIMAGETOOL_URL}"
+            sudo chmod +x /usr/local/bin/appimagetool
 
         echo_exported_variables() {
             echo "BUILDENV_NAME=${BUILDENV_NAME}"
