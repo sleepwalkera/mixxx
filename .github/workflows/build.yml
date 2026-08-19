@@ -427,6 +427,29 @@ jobs:
           CC: ${{ matrix.cc }}
           CXX: ${{ matrix.cxx }}
 
+      - name: "[AppImage] Rebuild GLib as shared (test)"
+        if: matrix.cpack_generator == 'AppImage'
+        run: |
+          set -euo pipefail
+          MIXXX_VCPKG_ROOT="${MIXXX_VCPKG_ROOT:-/home/runner/buildenv/mixxx-deps-2.7-x64-linux-1c20f84a}"
+          echo "=== [TEST] Rebuilding GLib as shared library ==="
+          sudo apt-get install -y --no-install-recommends meson ninja-build 2>/dev/null | tail -1
+          cd /tmp
+          curl -fsSL --connect-timeout 15 --max-time 120 \
+              "https://download.gnome.org/sources/glib/2.88/glib-2.88.0.tar.xz" \
+              | tar -xJ 2>/dev/null
+          cd glib-2.88.0
+          PKG_CONFIG_PATH="${MIXXX_VCPKG_ROOT}/installed/x64-linux/lib/pkgconfig" \
+          meson setup build \
+              --prefix "${MIXXX_VCPKG_ROOT}/installed/x64-linux" \
+              -Ddefault_library=shared \
+              -Ddocumentation=false -Ddtrace=disabled -Dintrospection=false \
+              -Dlibelf=disabled -Dtests=false -Dxattr=false \
+              -Dselinux=disabled -Dlibmount=disabled 2>&1 | tail -3
+          ninja -C build install 2>&1 | tail -3
+          rm -f "${MIXXX_VCPKG_ROOT}/installed/x64-linux/lib/libglib-2.0.a"
+          echo "=== [TEST] GLib shared library installed ==="
+
       - name: "[Ubuntu/macOS] Set up gcc/clang problem matcher"
         if: runner.os != 'Windows'
         uses: ammaraskar/gcc-problem-matcher@0.3.0
