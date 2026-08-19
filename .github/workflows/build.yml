@@ -449,7 +449,19 @@ jobs:
               -Dlibelf=disabled -Dtests=false -Dxattr=false \
               -Dselinux=disabled -Dlibmount=disabled
           ninja -C build install
-          rm -f "${MIXXX_VCPKG_ROOT}/installed/x64-linux/lib/libglib-2.0.a"
+          rm -f "${MIXXX_VCPKG_ROOT}/installed/x64-linux/lib/libglib-2.0.a" \
+                "${MIXXX_VCPKG_ROOT}/installed/x64-linux/lib/libgobject-2.0.a" \
+                "${MIXXX_VCPKG_ROOT}/installed/x64-linux/lib/libgio-2.0.a" \
+                "${MIXXX_VCPKG_ROOT}/installed/x64-linux/lib/libgmodule-2.0.a" \
+                "${MIXXX_VCPKG_ROOT}/installed/x64-linux/lib/libgthread-2.0.a"
+          # Re-run CMake so it picks up the shared libraries instead of the
+          # static .a files cached during the first configure.
+          cd /home/runner/work/mixxx/mixxx/build
+          cmake ${{ matrix.cmake_args }} ${{ env.CMAKE_ARGS_EXTRA }} \
+              -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+              -DCMAKE_PREFIX_PATH="${{ env.CMAKE_PREFIX_PATH }}" \
+              -DWARNINGS_FATAL=ON -DDEBUG_ASSERTIONS_FATAL=OFF \
+              . 2>&1 | tail -5
           echo "=== [TEST] GLib shared library installed ==="
 
       - name: "[Ubuntu/macOS] Set up gcc/clang problem matcher"
