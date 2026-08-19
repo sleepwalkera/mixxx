@@ -541,19 +541,6 @@ include(GNUInstallDirs)
 include(DefaultOption)
 include(IsStaticLibrary)
 
-if(DEFINED MIXXX_VCPKG_ROOT AND UNIX AND NOT APPLE)
-  # Prepend system paths to find the system's shared GLib instead of the
-  # vcpkg static GLib (which causes constructor-ordering issues when linked
-  # alongside static FFmpeg via LINK_GROUP:RESCAN).
-  # CMAKE_LIBRARY_ARCHITECTURE is set automatically on Debian-based systems.
-  if(CMAKE_LIBRARY_ARCHITECTURE)
-    list(PREPEND CMAKE_PREFIX_PATH
-      "/usr/lib/${CMAKE_LIBRARY_ARCHITECTURE}"
-      "/usr/lib/${CMAKE_LIBRARY_ARCHITECTURE}/cmake"
-    )
-  endif()
-endif()
-
 # Verify VCPKG settings
 if(DEFINED _VCPKG_INSTALLED_DIR)
   if(NOT EXISTS "${_VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}")

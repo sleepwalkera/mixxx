@@ -96,12 +96,8 @@ case "$1" in
         # Keep only what is genuinely needed from the system: build tools,
         # X11/Mesa/GL headers (Qt platform), and utilities.  Do NOT install
         # packages that the vcpkg buildenv already provides (e.g. sqlite3,
-        # openssl, protobuf) — doing so risks CMake preferring the system
-        # version over the buildenv's.
-        #
-        # libglib2.0-dev is an exception: the FindGLIB.cmake workaround
-        # (preferring the system shared GLib over the buildenv's static GLib)
-        # needs the system headers and shared library at link time.
+        # openssl, protobuf, glib) — doing so risks CMake preferring the
+        # system version over the buildenv's.
         if [ -n "${GITHUB_ENV}" ]; then
             sudo apt-get update
             sudo apt-get install -y --no-install-recommends \
@@ -116,7 +112,6 @@ case "$1" in
                 libfuse2t64 \
                 unzip \
                 squashfs-tools \
-                libglib2.0-dev \
                 libsecret-1-dev \
                 libgcrypt20-dev \
                 libgpg-error-dev \
