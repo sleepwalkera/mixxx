@@ -93,21 +93,17 @@ case "$1" in
         export CMAKE_PREFIX_PATH="${BUILDENV_PATH}/installed/${VCPKG_TARGET_TRIPLET}"
 
         # Install system dependencies needed for the AppImage build.
+        # Keep only what is genuinely needed from the system: build tools,
+        # X11/Mesa/GL headers (Qt platform), and utilities.  Do NOT install
+        # packages that the vcpkg buildenv already provides (e.g. sqlite3,
+        # openssl, protobuf) — doing so risks CMake preferring the system
+        # version over the buildenv's.
+        #
+        # libglib2.0-dev is an exception: the FindGLIB.cmake workaround
+        # (preferring the system shared GLib over the buildenv's static GLib)
+        # needs the system headers and shared library at link time.
         if [ -n "${GITHUB_ENV}" ]; then
             sudo apt-get update
-
-            # Uninstall any pre-installed Qt6 or FFmpeg system packages so that
-            # CMake cannot accidentally pick them up instead of the dependencies
-            # from the vcpkg buildenv. These are not part of the AppImage build
-            # and bundling system libraries would also violate the licensing
-            # constraints of the published buildenv.
-            qt_ffmpeg_pkgs=$(dpkg-query -W -f='${Package}\n' 2>/dev/null \
-                | grep -E '^qt6-|^libqt6|^ffmpeg$|^libavcodec|^libavdevice|^libavfilter|^libavformat|^libavutil|^libswscale|^libswresample|^libpostproc' || true)
-            if [ -n "${qt_ffmpeg_pkgs}" ]; then
-                # shellcheck disable=SC2086
-                sudo apt-get remove --purge -y ${qt_ffmpeg_pkgs} || true
-            fi
-
             sudo apt-get install -y --no-install-recommends \
                 ccache \
                 g++ \
@@ -124,10 +120,6 @@ case "$1" in
                 libsecret-1-dev \
                 libgcrypt20-dev \
                 libgpg-error-dev \
-                libsqlite3-dev \
-                libssl-dev \
-                libprotobuf-dev \
-                protobuf-compiler \
                 libgl1-mesa-dev \
                 libxkbcommon-dev \
                 libxkbcommon-x11-dev \
