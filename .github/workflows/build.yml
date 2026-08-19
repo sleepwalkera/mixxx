@@ -447,8 +447,8 @@ jobs:
               -Ddefault_library=shared \
               -Ddocumentation=false -Ddtrace=disabled -Dintrospection=false \
               -Dlibelf=disabled -Dtests=false -Dxattr=false \
-              -Dselinux=disabled -Dlibmount=disabled 2>&1 | tail -3
-          ninja -C build install 2>&1 | tail -3
+              -Dselinux=disabled -Dlibmount=disabled
+          ninja -C build install
           rm -f "${MIXXX_VCPKG_ROOT}/installed/x64-linux/lib/libglib-2.0.a"
           echo "=== [TEST] GLib shared library installed ==="
 
