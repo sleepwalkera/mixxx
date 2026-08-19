@@ -445,7 +445,7 @@ jobs:
           meson setup build \
               --prefix "${MIXXX_VCPKG_ROOT}/installed/x64-linux" \
               -Ddefault_library=shared \
-              -Ddocumentation=false -Ddtrace=disabled -Dintrospection=false \
+              -Ddocumentation=false -Ddtrace=disabled -Dintrospection=disabled \
               -Dlibelf=disabled -Dtests=false -Dxattr=false \
               -Dselinux=disabled -Dlibmount=disabled
           ninja -C build install
