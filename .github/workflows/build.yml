@@ -432,32 +432,30 @@ jobs:
         run: |
           set -euo pipefail
           MIXXX_VCPKG_ROOT="${MIXXX_VCPKG_ROOT:-/home/runner/buildenv/mixxx-deps-2.7-x64-linux-1c20f84a}"
-          echo "=== [TEST] Rebuilding GLib as shared library ==="
-          sudo apt-get install -y --no-install-recommends ninja-build python3-pip 2>/dev/null | tail -1
-          pip3 install --user meson 2>/dev/null
-          export PATH="$HOME/.local/bin:$PATH"
+          echo "=== [TEST] Building GLib as shared via vcpkg ==="
+          # Clone the vcpkg fork with the GLib fix (-Ddefault_library=shared)
           cd /tmp
-          curl -fsSL --connect-timeout 15 --max-time 120 \
-              "https://download.gnome.org/sources/glib/2.88/glib-2.88.0.tar.xz" \
-              | tar -xJ 2>/dev/null
-          cd glib-2.88.0
-          PKG_CONFIG_PATH="${MIXXX_VCPKG_ROOT}/installed/x64-linux/lib/pkgconfig" \
-          meson setup build \
-              --prefix "${MIXXX_VCPKG_ROOT}/installed/x64-linux" \
-              --libdir=lib \
-              -Ddefault_library=shared \
-              -Ddocumentation=false -Ddtrace=disabled -Dintrospection=disabled \
-              -Dlibelf=disabled -Dtests=false -Dxattr=false \
-              -Dselinux=disabled -Dlibmount=disabled
-          ninja -C build install
+          git clone --depth 1 --branch 2.7 \
+              https://github.com/sleepwalkera/vcpkg.git vcpkg 2>&1 | tail -1
+          cd vcpkg
+          ./bootstrap-vcpkg.sh -disableMetrics 2>&1 | tail -3
+          # Point vcpkg's installed tree to the buildenv so it reuses
+          # all dependencies (libffi, pcre2, zlib, …) instead of rebuilding
+          # everything from scratch.
+          rm -rf installed/x64-linux
+          ln -s "${MIXXX_VCPKG_ROOT}/installed/x64-linux" installed/x64-linux
+          # Remove the glib status so vcpkg thinks it's not installed
+          rm -f installed/vcpkg/info/glib_* 2>/dev/null || true
+          # Build GLib only — vcpkg will detect the existing deps and
+          # only rebuild glib with our -Ddefault_library=shared change.
+          ./vcpkg install glib --triplet x64-linux 2>&1 | tail -10
+          # Remove the static .a files so CMake picks the shared .so.
           rm -f "${MIXXX_VCPKG_ROOT}/installed/x64-linux/lib/libglib-2.0.a" \
                 "${MIXXX_VCPKG_ROOT}/installed/x64-linux/lib/libgobject-2.0.a" \
                 "${MIXXX_VCPKG_ROOT}/installed/x64-linux/lib/libgio-2.0.a" \
                 "${MIXXX_VCPKG_ROOT}/installed/x64-linux/lib/libgmodule-2.0.a" \
                 "${MIXXX_VCPKG_ROOT}/installed/x64-linux/lib/libgthread-2.0.a"
-          # Run ldconfig so the linker can find the shared GLib libraries.
           sudo ldconfig "${MIXXX_VCPKG_ROOT}/installed/x64-linux/lib"
-          # Delete cmake cache so the re-configure picks up the shared GLib.
           rm -f /home/runner/work/mixxx/mixxx/build/CMakeCache.txt
           cd /home/runner/work/mixxx/mixxx/build
           cmake ${{ matrix.cmake_args }} \
@@ -470,7 +468,7 @@ jobs:
               -DCMAKE_VERBOSE_MAKEFILE=OFF \
               -DCMAKE_EXE_LINKER_FLAGS="-Wl,--allow-shlib-undefined" \
               .. 2>&1 | tail -10
-          echo "=== [TEST] GLib shared library installed ==="
+          echo "=== [TEST] GLib built via vcpkg ==="
 
       - name: "[Ubuntu/macOS] Set up gcc/clang problem matcher"
         if: runner.os != 'Windows'
