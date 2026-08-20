@@ -175,19 +175,16 @@ case "$1" in
                [ ! -d "${BUILDENV_PATH}" ] && \
                [ -n "${GH_BUILDENV_TOKEN:-}" ]; then
                 echo "=== Downloading buildenv from ${BUILDENV_URL} ==="
+                sudo mkdir -p "${BUILDENV_BASEPATH}"
                 curl -fsSL -H "Authorization: Bearer ${GH_BUILDENV_TOKEN}" \
-                    "${BUILDENV_URL}" -o "/tmp/${BUILDENV_NAME}.zip" \
+                    "${BUILDENV_URL}" -o "${BUILDENV_BASEPATH}/${BUILDENV_NAME}.zip" \
                     --connect-timeout 15 --max-time 1800
-                # Extract to a temp dir first, then move into the correct
-                # BUILDENV_NAME directory.  The vcpkg export zip has no
-                # top-level directory, so unpacking directly would scatter
-                # files into BUILDENV_BASEPATH.
-                EXTRACT_TMP="/tmp/${BUILDENV_NAME}_extract"
-                sudo mkdir -p "${EXTRACT_TMP}" "${BUILDENV_PATH}"
-                sudo unzip -q "/tmp/${BUILDENV_NAME}.zip" -d "${EXTRACT_TMP}" 2>/dev/null
-                sudo cp -a "${EXTRACT_TMP}/." "${BUILDENV_PATH}/"
-                sudo rm -rf "${EXTRACT_TMP}" "/tmp/${BUILDENV_NAME}.zip"
-                echo "=== Buildenv extracted to ${BUILDENV_PATH} ==="
+                rm -rf "${BUILDENV_BASEPATH}/${BUILDENV_NAME}"
+                # Point CMake at the local archive so its BUILDENV_NAME
+                # derivation (from the URL filename) yields the correct name,
+                # and it will find the zip already present and unpack it.
+                BUILDENV_URL="file://${BUILDENV_BASEPATH}/${BUILDENV_NAME}.zip"
+                echo "=== Buildenv downloaded to ${BUILDENV_URL} ==="
             fi
         fi
 
