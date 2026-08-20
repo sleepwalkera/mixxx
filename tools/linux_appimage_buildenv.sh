@@ -178,9 +178,15 @@ case "$1" in
                 curl -fsSL -H "Authorization: Bearer ${GH_BUILDENV_TOKEN}" \
                     "${BUILDENV_URL}" -o "/tmp/${BUILDENV_NAME}.zip" \
                     --connect-timeout 15 --max-time 1800
-                sudo mkdir -p "${BUILDENV_BASEPATH}"
-                sudo unzip -q "/tmp/${BUILDENV_NAME}.zip" -d "${BUILDENV_BASEPATH}" 2>/dev/null
-                rm -f "/tmp/${BUILDENV_NAME}.zip"
+                # Extract to a temp dir first, then move into the correct
+                # BUILDENV_NAME directory.  The vcpkg export zip has no
+                # top-level directory, so unpacking directly would scatter
+                # files into BUILDENV_BASEPATH.
+                EXTRACT_TMP="/tmp/${BUILDENV_NAME}_extract"
+                sudo mkdir -p "${EXTRACT_TMP}" "${BUILDENV_PATH}"
+                sudo unzip -q "/tmp/${BUILDENV_NAME}.zip" -d "${EXTRACT_TMP}" 2>/dev/null
+                sudo cp -a "${EXTRACT_TMP}/." "${BUILDENV_PATH}/"
+                sudo rm -rf "${EXTRACT_TMP}" "/tmp/${BUILDENV_NAME}.zip"
                 echo "=== Buildenv extracted to ${BUILDENV_PATH} ==="
             fi
         fi
