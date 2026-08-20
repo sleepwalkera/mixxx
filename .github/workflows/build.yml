@@ -454,14 +454,18 @@ jobs:
                 "${MIXXX_VCPKG_ROOT}/installed/x64-linux/lib/libgio-2.0.a" \
                 "${MIXXX_VCPKG_ROOT}/installed/x64-linux/lib/libgmodule-2.0.a" \
                 "${MIXXX_VCPKG_ROOT}/installed/x64-linux/lib/libgthread-2.0.a"
-          # Re-run CMake so it picks up the shared libraries instead of the
-          # static .a files cached during the first configure.
+          # Delete cmake cache so the re-configure picks up the shared GLib.
+          rm -f /home/runner/work/mixxx/mixxx/build/CMakeCache.txt
           cd /home/runner/work/mixxx/mixxx/build
-          cmake ${{ matrix.cmake_args }} ${{ env.CMAKE_ARGS_EXTRA }} \
+          cmake ${{ matrix.cmake_args }} \
               -DCMAKE_BUILD_TYPE=RelWithDebInfo \
               -DCMAKE_PREFIX_PATH="${{ env.CMAKE_PREFIX_PATH }}" \
               -DWARNINGS_FATAL=ON -DDEBUG_ASSERTIONS_FATAL=OFF \
-              . 2>&1 | tail -5
+              -DBATTERY=ON -DBROADCAST=ON -DDOWNLOAD_MANUAL=ON \
+              -DHID=ON -DKEYFINDER=ON -DLILV=ON -DOPUS=ON \
+              -DQTKEYCHAIN=ON -DVINYLCONTROL=ON \
+              -DCMAKE_VERBOSE_MAKEFILE=OFF \
+              .. 2>&1 | tail -10
           echo "=== [TEST] GLib shared library installed ==="
 
       - name: "[Ubuntu/macOS] Set up gcc/clang problem matcher"
