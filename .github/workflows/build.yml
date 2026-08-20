@@ -438,54 +438,6 @@ jobs:
           CC: ${{ matrix.cc }}
           CXX: ${{ matrix.cxx }}
 
-      - name: "[AppImage] Rebuild GLib as shared (test)"
-        if: matrix.cpack_generator == 'AppImage'
-        run: |
-          set -euo pipefail
-          MIXXX_VCPKG_ROOT="${MIXXX_VCPKG_ROOT:-/home/runner/buildenv/mixxx-deps-2.7-x64-linux-1c20f84a}"
-          echo "=== [TEST] Building GLib as shared via vcpkg ==="
-          # Clone the vcpkg fork with the GLib fix (-Ddefault_library=shared)
-          cd /tmp
-          git clone --depth 1 --branch 2.7 \
-              https://github.com/sleepwalkera/vcpkg.git vcpkg 2>&1 | tail -1
-          cd vcpkg
-          ./bootstrap-vcpkg.sh -disableMetrics 2>&1 | tail -3
-          # Point vcpkg's installed tree to the buildenv so it reuses
-          # all dependencies (libffi, pcre2, zlib, …) instead of rebuilding
-          # everything from scratch.
-          mkdir -p installed/vcpkg/info
-          rm -rf installed/x64-linux
-          ln -s "${MIXXX_VCPKG_ROOT}/installed/x64-linux" installed/x64-linux
-          # Create a minimal vcpkg installed-directory database so vcpkg
-          # recognizes that the buildenv's packages are already installed
-          # and only needs to rebuild glib.
-          for pkg in libffi pcre2 zlib gettext libiconv; do
-            touch installed/vcpkg/info/${pkg}_ 2>/dev/null || true
-          done
-          rm -f installed/vcpkg/info/glib_* 2>/dev/null || true
-          ./vcpkg install glib --triplet=x64-linux 2>&1 | tail -30
-          echo "=== vcpkg exit code: $? ==="
-          # Remove the static .a files so CMake picks the shared .so.
-          rm -f "${MIXXX_VCPKG_ROOT}/installed/x64-linux/lib/libglib-2.0.a" \
-                "${MIXXX_VCPKG_ROOT}/installed/x64-linux/lib/libgobject-2.0.a" \
-                "${MIXXX_VCPKG_ROOT}/installed/x64-linux/lib/libgio-2.0.a" \
-                "${MIXXX_VCPKG_ROOT}/installed/x64-linux/lib/libgmodule-2.0.a" \
-                "${MIXXX_VCPKG_ROOT}/installed/x64-linux/lib/libgthread-2.0.a"
-          sudo ldconfig "${MIXXX_VCPKG_ROOT}/installed/x64-linux/lib"
-          rm -f /home/runner/work/mixxx/mixxx/build/CMakeCache.txt
-          cd /home/runner/work/mixxx/mixxx/build
-          cmake ${{ matrix.cmake_args }} \
-              -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-              -DCMAKE_PREFIX_PATH="${{ env.CMAKE_PREFIX_PATH }}" \
-              -DWARNINGS_FATAL=ON -DDEBUG_ASSERTIONS_FATAL=OFF \
-              -DBATTERY=ON -DBROADCAST=ON -DDOWNLOAD_MANUAL=ON \
-              -DHID=ON -DKEYFINDER=ON -DLILV=ON -DOPUS=ON \
-              -DQTKEYCHAIN=ON -DVINYLCONTROL=ON \
-              -DCMAKE_VERBOSE_MAKEFILE=OFF \
-              -DCMAKE_EXE_LINKER_FLAGS="-Wl,--allow-shlib-undefined" \
-              .. 2>&1 | tail -10
-          echo "=== [TEST] GLib built via vcpkg ==="
-
       - name: "[Ubuntu/macOS] Set up gcc/clang problem matcher"
         if: runner.os != 'Windows'
         uses: ammaraskar/gcc-problem-matcher@0.3.0
