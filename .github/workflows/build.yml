@@ -455,6 +455,8 @@ jobs:
                 "${MIXXX_VCPKG_ROOT}/installed/x64-linux/lib/libgio-2.0.a" \
                 "${MIXXX_VCPKG_ROOT}/installed/x64-linux/lib/libgmodule-2.0.a" \
                 "${MIXXX_VCPKG_ROOT}/installed/x64-linux/lib/libgthread-2.0.a"
+          # Run ldconfig so the linker can find the shared GLib libraries.
+          sudo ldconfig "${MIXXX_VCPKG_ROOT}/installed/x64-linux/lib"
           # Delete cmake cache so the re-configure picks up the shared GLib.
           rm -f /home/runner/work/mixxx/mixxx/build/CMakeCache.txt
           cd /home/runner/work/mixxx/mixxx/build
@@ -466,6 +468,7 @@ jobs:
               -DHID=ON -DKEYFINDER=ON -DLILV=ON -DOPUS=ON \
               -DQTKEYCHAIN=ON -DVINYLCONTROL=ON \
               -DCMAKE_VERBOSE_MAKEFILE=OFF \
+              -DCMAKE_EXE_LINKER_FLAGS="-Wl,--allow-shlib-undefined" \
               .. 2>&1 | tail -10
           echo "=== [TEST] GLib shared library installed ==="
 
