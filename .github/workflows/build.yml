@@ -15,6 +15,11 @@ on:
         type: string
         required: true
     secrets:
+      # Used to download a not-yet-published buildenv from a CI artifact
+      # while testing (AppImage only).
+      GH_PAT:
+        required: false
+    secrets:
       AZURE_CLIENT_ID:
         required: false
       AZURE_CLIENT_SECRET:

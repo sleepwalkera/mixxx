@@ -170,7 +170,8 @@ case "$1" in
             # downloads.mixxx.org), download the buildenv before CMake tries.
             # CMake's file(DOWNLOAD) does not support authentication headers,
             # so we use curl with a token supplied via GITHUB_TOKEN.
-            if [ -n "${BUILDENV_URL}" ] && \
+            echo "CHECK: GH_BUILDENV_TOKEN is ${GH_BUILDENV_TOKEN:+SET}${GH_BUILDENV_TOKEN:-UNSET}"
+if [ -n "${BUILDENV_URL}" ] && \
                ! echo "${BUILDENV_URL}" | grep -q "downloads.mixxx.org" && \
                [ ! -d "${BUILDENV_PATH}" ] && \
                [ -n "${GH_BUILDENV_TOKEN:-}" ]; then
