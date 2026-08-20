@@ -176,10 +176,13 @@ if [ -n "${BUILDENV_URL}" ] && \
                [ ! -d "${BUILDENV_PATH}" ] && \
                [ -n "${GH_BUILDENV_TOKEN:-}" ]; then
                 echo "=== Downloading buildenv from ${BUILDENV_URL} ==="
-                sudo mkdir -p "${BUILDENV_BASEPATH}"
+                # /home/runner/buildenv is owned by the runner user, no sudo;
+                # sudo would create it root-owned and curl could not write.
+                mkdir -p "${BUILDENV_BASEPATH}"
                 curl -fsSL -H "Authorization: Bearer ${GH_BUILDENV_TOKEN}" \
                     "${BUILDENV_URL}" -o "${BUILDENV_BASEPATH}/${BUILDENV_NAME}.zip" \
                     --connect-timeout 15 --max-time 1800
+                ls -la "${BUILDENV_BASEPATH}/${BUILDENV_NAME}.zip" 2>&1 | tail -1
                 rm -rf "${BUILDENV_BASEPATH}/${BUILDENV_NAME}"
                 # Point CMake at the local archive so its BUILDENV_NAME
                 # derivation (from the URL filename) yields the correct name,
