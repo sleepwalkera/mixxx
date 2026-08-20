@@ -444,6 +444,7 @@ jobs:
           PKG_CONFIG_PATH="${MIXXX_VCPKG_ROOT}/installed/x64-linux/lib/pkgconfig" \
           meson setup build \
               --prefix "${MIXXX_VCPKG_ROOT}/installed/x64-linux" \
+              --libdir=lib \
               -Ddefault_library=shared \
               -Ddocumentation=false -Ddtrace=disabled -Dintrospection=disabled \
               -Dlibelf=disabled -Dtests=false -Dxattr=false \
