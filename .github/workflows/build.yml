@@ -213,6 +213,9 @@ jobs:
             compiler_cache_id: appimage-qt6
             buildenv_basepath: /home/runner/buildenv
             buildenv_script: tools/linux_appimage_buildenv.sh
+            # Temporary: point at the rebuilt buildenv artifact (shared GLib)
+            # until it is published to downloads.mixxx.org.
+            buildenv_url: https://api.github.com/repos/sleepwalkera/vcpkg/actions/artifacts/9402535557/zip
             artifacts_name: AppImage Linux x86_64
             artifacts_path: build/*.AppImage
             artifacts_slug: linux-appimage
@@ -349,6 +352,10 @@ jobs:
         run: ${{ matrix.buildenv_script }} setup
         env:
           BUILDENV_BASEPATH: ${{ matrix.buildenv_basepath }}
+          BUILDENV_URL: ${{ matrix.buildenv_url }}
+          # The buildenv script uses the token to download a not-yet-published
+          # buildenv from a CI artifact (AppImage test only).
+          GH_BUILDENV_TOKEN: ${{ matrix.buildenv_url != null && secrets.GH_PAT || '' }}
 
       - name: "[Windows] Set up build environment"
         if: matrix.buildenv_script != null && runner.os == 'Windows'
@@ -442,14 +449,18 @@ jobs:
           # Point vcpkg's installed tree to the buildenv so it reuses
           # all dependencies (libffi, pcre2, zlib, …) instead of rebuilding
           # everything from scratch.
-          mkdir -p installed
+          mkdir -p installed/vcpkg/info
           rm -rf installed/x64-linux
           ln -s "${MIXXX_VCPKG_ROOT}/installed/x64-linux" installed/x64-linux
-          # Remove the glib status so vcpkg thinks it's not installed
+          # Create a minimal vcpkg installed-directory database so vcpkg
+          # recognizes that the buildenv's packages are already installed
+          # and only needs to rebuild glib.
+          for pkg in libffi pcre2 zlib gettext libiconv; do
+            touch installed/vcpkg/info/${pkg}_ 2>/dev/null || true
+          done
           rm -f installed/vcpkg/info/glib_* 2>/dev/null || true
-          # Build GLib only — vcpkg will detect the existing deps and
-          # only rebuild glib with our -Ddefault_library=shared change.
-          ./vcpkg install glib --triplet x64-linux 2>&1 | tail -10
+          ./vcpkg install glib --triplet=x64-linux 2>&1 | tail -30
+          echo "=== vcpkg exit code: $? ==="
           # Remove the static .a files so CMake picks the shared .so.
           rm -f "${MIXXX_VCPKG_ROOT}/installed/x64-linux/lib/libglib-2.0.a" \
                 "${MIXXX_VCPKG_ROOT}/installed/x64-linux/lib/libgobject-2.0.a" \

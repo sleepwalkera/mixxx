@@ -40,11 +40,11 @@ case "$HOST_ARCH" in
         if [ -n "${BUILDENV_RELEASE}" ]; then
             : "${VCPKG_TARGET_TRIPLET:=x64-linux-release}"
             : "${BUILDENV_BRANCH:=2.7-rel}"
-            : "${BUILDENV_NAME:=mixxx-deps-2.7-x64-linux-rel-1c20f84a}"
+            : "${BUILDENV_NAME:=mixxx-deps-2.7-x64-linux-rel-70477864}"
         else
             : "${VCPKG_TARGET_TRIPLET:=x64-linux}"
             : "${BUILDENV_BRANCH:=2.7}"
-            : "${BUILDENV_NAME:=mixxx-deps-2.7-x64-linux-1c20f84a}"
+            : "${BUILDENV_NAME:=mixxx-deps-2.7-x64-linux-70477864}"
         fi
         ;;
     aarch64)
@@ -66,7 +66,9 @@ case "$HOST_ARCH" in
         ;;
 esac
 
-BUILDENV_URL="https://downloads.mixxx.org/dependencies/${BUILDENV_BRANCH}/Linux/${BUILDENV_NAME}.zip"
+# Allow overriding the buildenv download URL (e.g. to point at a CI artifact
+# while testing a not-yet-published buildenv).
+: "${BUILDENV_URL:=https://downloads.mixxx.org/dependencies/${BUILDENV_BRANCH}/Linux/${BUILDENV_NAME}.zip}"
 MIXXX_ROOT="$(realpath "$(dirname "$THIS_SCRIPT_NAME")/..")"
 
 [ -z "$BUILDENV_BASEPATH" ] && BUILDENV_BASEPATH="${MIXXX_ROOT}/buildenv"
@@ -163,6 +165,24 @@ case "$1" in
                 -o /usr/local/bin/appimagetool \
                 "${APPIMAGETOOL_URL}"
             sudo chmod +x /usr/local/bin/appimagetool
+
+            # If BUILDENV_URL points to a custom location (not the default
+            # downloads.mixxx.org), download the buildenv before CMake tries.
+            # CMake's file(DOWNLOAD) does not support authentication headers,
+            # so we use curl with a token supplied via GITHUB_TOKEN.
+            if [ -n "${BUILDENV_URL}" ] && \
+               ! echo "${BUILDENV_URL}" | grep -q "downloads.mixxx.org" && \
+               [ ! -d "${BUILDENV_PATH}" ] && \
+               [ -n "${GH_BUILDENV_TOKEN:-}" ]; then
+                echo "=== Downloading buildenv from ${BUILDENV_URL} ==="
+                curl -fsSL -H "Authorization: Bearer ${GH_BUILDENV_TOKEN}" \
+                    "${BUILDENV_URL}" -o "/tmp/${BUILDENV_NAME}.zip" \
+                    --connect-timeout 15 --max-time 1800
+                sudo mkdir -p "${BUILDENV_BASEPATH}"
+                sudo unzip -q "/tmp/${BUILDENV_NAME}.zip" -d "${BUILDENV_BASEPATH}" 2>/dev/null
+                rm -f "/tmp/${BUILDENV_NAME}.zip"
+                echo "=== Buildenv extracted to ${BUILDENV_PATH} ==="
+            fi
         fi
 
         echo_exported_variables() {
