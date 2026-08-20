@@ -355,7 +355,7 @@ jobs:
           BUILDENV_URL: ${{ matrix.buildenv_url }}
           # The buildenv script uses the token to download a not-yet-published
           # buildenv from a CI artifact (AppImage test only).
-          GH_BUILDENV_TOKEN: ${{ matrix.buildenv_url != null && secrets.GH_PAT || '' }}
+          GH_BUILDENV_TOKEN: ${{ secrets.GH_PAT }}
 
       - name: "[Windows] Set up build environment"
         if: matrix.buildenv_script != null && runner.os == 'Windows'
