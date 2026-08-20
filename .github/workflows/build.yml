@@ -442,6 +442,7 @@ jobs:
           # Point vcpkg's installed tree to the buildenv so it reuses
           # all dependencies (libffi, pcre2, zlib, …) instead of rebuilding
           # everything from scratch.
+          mkdir -p installed
           rm -rf installed/x64-linux
           ln -s "${MIXXX_VCPKG_ROOT}/installed/x64-linux" installed/x64-linux
           # Remove the glib status so vcpkg thinks it's not installed
