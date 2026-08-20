@@ -19,7 +19,6 @@ on:
       # while testing (AppImage only).
       GH_PAT:
         required: false
-    secrets:
       AZURE_CLIENT_ID:
         required: false
       AZURE_CLIENT_SECRET:
