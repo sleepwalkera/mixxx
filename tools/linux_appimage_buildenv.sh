@@ -40,11 +40,11 @@ case "$HOST_ARCH" in
         if [ -n "${BUILDENV_RELEASE}" ]; then
             : "${VCPKG_TARGET_TRIPLET:=x64-linux-release}"
             : "${BUILDENV_BRANCH:=2.7-rel}"
-            : "${BUILDENV_NAME:=mixxx-deps-2.7-x64-linux-rel-70477864}"
+            : "${BUILDENV_NAME:=mixxx-deps-2.7-x64-linux-rel-8177263d}"
         else
             : "${VCPKG_TARGET_TRIPLET:=x64-linux}"
             : "${BUILDENV_BRANCH:=2.7}"
-            : "${BUILDENV_NAME:=mixxx-deps-2.7-x64-linux-70477864}"
+            : "${BUILDENV_NAME:=mixxx-deps-2.7-x64-linux-8177263d}"
         fi
         ;;
     aarch64)
@@ -102,16 +102,23 @@ case "$1" in
         # system version over the buildenv's.
         if [ -n "${GITHUB_ENV}" ]; then
             sudo apt-get update
+            # libfuse2t64 is the t64-transitioned name (Debian 13 / Ubuntu 24.04+);
+            # libfuse2 is the older name (Ubuntu 22.04).  Install whichever is available.
+            FUSE_PKG="libfuse2t64"
+            if ! apt-cache show libfuse2t64 &>/dev/null; then
+                FUSE_PKG="libfuse2"
+            fi
             sudo apt-get install -y --no-install-recommends \
                 ccache \
                 g++ \
+                g++-12 \
                 make \
                 cmake \
                 pkg-config \
                 patchelf \
                 file \
                 desktop-file-utils \
-                libfuse2t64 \
+                "${FUSE_PKG}" \
                 unzip \
                 squashfs-tools \
                 libsecret-1-dev \
