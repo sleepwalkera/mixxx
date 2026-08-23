@@ -42,9 +42,9 @@ case "$HOST_ARCH" in
             : "${BUILDENV_BRANCH:=2.7-rel}"
             : "${BUILDENV_NAME:=mixxx-deps-2.7-x64-linux-rel-8177263d}"
         else
-            : "${VCPKG_TARGET_TRIPLET:=x64-linux}"
+            : "${VCPKG_TARGET_TRIPLET:=x64-linux-glib-dynamic}"
             : "${BUILDENV_BRANCH:=2.7}"
-            : "${BUILDENV_NAME:=mixxx-deps-2.7-x64-linux-8177263d}"
+            : "${BUILDENV_NAME:=mixxx-deps-2.7-x64-linux-glib-dynamic-c37ed62c}"
         fi
         ;;
     aarch64)
