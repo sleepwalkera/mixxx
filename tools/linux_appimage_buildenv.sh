@@ -44,7 +44,7 @@ case "$HOST_ARCH" in
         else
             : "${VCPKG_TARGET_TRIPLET:=x64-linux-glib-dynamic}"
             : "${BUILDENV_BRANCH:=2.7}"
-            : "${BUILDENV_NAME:=mixxx-deps-2.7-x64-linux-glib-dynamic-c37ed62c}"
+            : "${BUILDENV_NAME:=mixxx-deps-2.7-x64-linux-glib-dynamic-0adfc57a}"
         fi
         ;;
     aarch64)
