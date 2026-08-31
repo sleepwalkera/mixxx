@@ -210,8 +210,6 @@ jobs:
               -DCMAKE_CXX_FLAGS_RELWITHDEBINFO="-O2 -DNDEBUG"
               -DCMAKE_INSTALL_PREFIX=/usr
               -DCMAKE_EXE_LINKER_FLAGS="-Wl,--allow-shlib-undefined"
-            cc: gcc-12
-            cxx: g++-12
             ctest_args: []
             cpack_generator: AppImage
             crosscompile: true
@@ -222,7 +220,7 @@ jobs:
             buildenv_script: tools/linux_appimage_buildenv.sh
             # Temporary: point at the rebuilt buildenv artifact (shared GLib)
             # until it is published to downloads.mixxx.org.
-            buildenv_url: https://api.github.com/repos/sleepwalkera/vcpkg/actions/artifacts/9490873904/zip
+            buildenv_url: https://api.github.com/repos/sleepwalkera/vcpkg/actions/artifacts/9754619954/zip
             artifacts_name: AppImage Linux x86_64
             artifacts_path: build/*.AppImage
             artifacts_slug: linux-appimage

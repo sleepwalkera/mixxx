@@ -42,9 +42,9 @@ case "$HOST_ARCH" in
             : "${BUILDENV_BRANCH:=2.7-rel}"
             : "${BUILDENV_NAME:=mixxx-deps-2.7-x64-linux-rel-8177263d}"
         else
-            : "${VCPKG_TARGET_TRIPLET:=x64-linux-glib-dynamic}"
+            : "${VCPKG_TARGET_TRIPLET:=x64-linux}"
             : "${BUILDENV_BRANCH:=2.7}"
-            : "${BUILDENV_NAME:=mixxx-deps-2.7-x64-linux-glib-dynamic-0adfc57a}"
+            : "${BUILDENV_NAME:=mixxx-deps-2.7-x64-linux-6efa2181}"
         fi
         ;;
     aarch64)
@@ -111,7 +111,6 @@ case "$1" in
             sudo apt-get install -y --no-install-recommends \
                 ccache \
                 g++ \
-                g++-12 \
                 make \
                 cmake \
                 pkg-config \
