@@ -172,30 +172,6 @@ case "$1" in
                 "${APPIMAGETOOL_URL}"
             sudo chmod +x /usr/local/bin/appimagetool
 
-            # If BUILDENV_URL points to a custom location (not the default
-            # downloads.mixxx.org), download the buildenv before CMake tries.
-            # CMake's file(DOWNLOAD) does not support authentication headers,
-            # so we use curl with a token supplied via GITHUB_TOKEN.
-            echo "CHECK: GH_BUILDENV_TOKEN is ${GH_BUILDENV_TOKEN:+SET}${GH_BUILDENV_TOKEN:-UNSET}"
-if [ -n "${BUILDENV_URL}" ] && \
-               ! echo "${BUILDENV_URL}" | grep -q "downloads.mixxx.org" && \
-               [ ! -d "${BUILDENV_PATH}" ] && \
-               [ -n "${GH_BUILDENV_TOKEN:-}" ]; then
-                echo "=== Downloading buildenv from ${BUILDENV_URL} ==="
-                # /home/runner/buildenv is owned by the runner user, no sudo;
-                # sudo would create it root-owned and curl could not write.
-                mkdir -p "${BUILDENV_BASEPATH}"
-                curl -fsSL -H "Authorization: Bearer ${GH_BUILDENV_TOKEN}" \
-                    "${BUILDENV_URL}" -o "${BUILDENV_BASEPATH}/${BUILDENV_NAME}.zip" \
-                    --connect-timeout 15 --max-time 1800
-                ls -la "${BUILDENV_BASEPATH}/${BUILDENV_NAME}.zip" 2>&1 | tail -1
-                rm -rf "${BUILDENV_BASEPATH}/${BUILDENV_NAME}"
-                # Point CMake at the local archive so its BUILDENV_NAME
-                # derivation (from the URL filename) yields the correct name,
-                # and it will find the zip already present and unpack it.
-                BUILDENV_URL="file://${BUILDENV_BASEPATH}/${BUILDENV_NAME}.zip"
-                echo "=== Buildenv downloaded to ${BUILDENV_URL} ==="
-            fi
         fi
 
         echo_exported_variables() {
