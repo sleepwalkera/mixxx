@@ -44,7 +44,7 @@ case "$HOST_ARCH" in
         else
             : "${VCPKG_TARGET_TRIPLET:=x64-linux}"
             : "${BUILDENV_BRANCH:=2.7}"
-            : "${BUILDENV_NAME:=mixxx-deps-2.7-x64-linux-6efa2181}"
+            : "${BUILDENV_NAME:=mixxx-deps-2.7-x64-linux-969b62ea}"
         fi
         ;;
     aarch64)
