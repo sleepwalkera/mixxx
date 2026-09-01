@@ -403,7 +403,7 @@ endif()
 include(CMakeDependentOption)
 
 option(QT6 "Build with Qt6" ON)
-option(MIXXX_APPIMAGE "Build for AppImage distribution (bundle dlopen dependencies)" OFF)
+option(MIXXX_APPIMAGE "Build for AppImage distribution (install AppImage-specific desktop file)" OFF)
 cmake_dependent_option(
   QML
   "Build with QML"
