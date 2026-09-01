@@ -124,23 +124,14 @@ case "$1" in
                 libgcrypt20-dev \
                 libgpg-error-dev \
                 libgl1-mesa-dev \
+                '^libxcb.*-dev' \
+                libx11-xcb-dev \
+                libglu1-mesa-dev \
+                libxrender-dev \
+                libxi-dev \
                 libxkbcommon-dev \
                 libxkbcommon-x11-dev \
-                libxcb-glx0-dev \
-                libxcb-cursor-dev \
-                libxcb-keysyms1-dev \
-                libxcb-randr0-dev \
-                libxcb-xfixes0-dev \
-                libxcb-xinerama0-dev \
-                libxcb-xkb-dev \
-                libxcb-shm0-dev \
-                libxcb-icccm4-dev \
-                libxcb-image0-dev \
-                libxcb-util-dev \
-                libxcb-sync-dev \
-                libx11-xcb-dev \
-                libxrender-dev \
-                libxcb-xinput-dev \
+                libegl1-mesa-dev \
                 libupower-glib-dev \
                 libsm-dev \
                 libxrandr-dev \
