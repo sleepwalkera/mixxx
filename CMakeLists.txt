@@ -2857,19 +2857,7 @@ if(FFMPEG)
       __STDC_FORMAT_MACROS
   )
 
-  # Static FFmpeg libraries have cross-references (e.g. libavformat references
-  # av_adts_header_parse from libavcodec).  LINK_GROUP:RESCAN wraps them in
-  # --start-group/--end-group so the GNU linker resolves these.  Harmless for
-  # shared builds; Apple's ld64 does not support the group flags.
-  if(UNIX AND NOT APPLE)
-    target_link_libraries(
-      mixxx-lib
-      PRIVATE
-        "$<LINK_GROUP:RESCAN,FFmpeg::avformat,FFmpeg::avcodec,FFmpeg::avutil,FFmpeg::swresample>"
-    )
-  else()
-    target_link_libraries(mixxx-lib PRIVATE FFmpeg::FFmpeg)
-  endif()
+  target_link_libraries(mixxx-lib PRIVATE FFmpeg::FFmpeg)
   target_include_directories(mixxx-lib PUBLIC "${FFmpeg_INCLUDE_DIRS}")
 endif()
 

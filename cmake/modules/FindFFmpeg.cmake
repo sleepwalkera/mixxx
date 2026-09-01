@@ -344,4 +344,24 @@ if(FFmpeg_FOUND)
       endif()
     endforeach()
   endif()
+
+  # Static FFmpeg libraries have circular cross-references (e.g. libavformat
+  # references av_adts_header_parse from libavcodec).  LINK_GROUP:RESCAN wraps
+  # them in --start-group/--end-group so the GNU linker resolves these; a
+  # single-pass link of the aggregate target would otherwise fail.  Harmless
+  # for shared builds (symbols resolve at runtime), and Apple's ld64 does not
+  # support the group flags.  Requires CMake 3.24+ (LINK_GROUP genex).
+  if(UNIX AND NOT APPLE AND CMAKE_VERSION VERSION_GREATER_EQUAL 3.24)
+    is_static_library(_ffmpeg_static FFmpeg::avformat)
+    if(_ffmpeg_static)
+      set_property(
+        TARGET FFmpeg::FFmpeg
+        APPEND
+        PROPERTY
+          INTERFACE_LINK_LIBRARIES
+            "$<LINK_GROUP:RESCAN,FFmpeg::avformat,FFmpeg::avcodec,FFmpeg::avutil,FFmpeg::swresample>"
+      )
+    endif()
+    unset(_ffmpeg_static)
+  endif()
 endif()
