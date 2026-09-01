@@ -202,7 +202,6 @@ jobs:
               -DMIXXX_APPIMAGE=ON
               -DINSTALL_USER_UDEV_RULES=OFF
               -DPKG_CONFIG_EXECUTABLE=/usr/bin/pkg-config
-              -DCMAKE_MODULE_PATH="${GITHUB_WORKSPACE}/packaging/appimage"
               -DCMAKE_CXX_FLAGS_RELWITHDEBINFO="-O2 -DNDEBUG"
               -DCMAKE_INSTALL_PREFIX=/usr
               -DCMAKE_EXE_LINKER_FLAGS="-Wl,--allow-shlib-undefined"
