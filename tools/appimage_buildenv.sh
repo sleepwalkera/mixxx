@@ -50,12 +50,18 @@ case "$HOST_ARCH" in
     aarch64)
         VCPKG_TARGET_TRIPLET="arm64-linux"
         : "${BUILDENV_BRANCH:=2.7}"
-        : "${BUILDENV_NAME:=mixxx-deps-2.7-arm64-linux}"
-        echo "ERROR: arm64-linux buildenv is not yet published by Mixxx."
-        echo "Once a mixxx-deps-<version>-arm64-linux-XXXXXXXX.zip appears on"
-        echo "https://downloads.mixxx.org/dependencies/<version>/Linux/,"
-        echo "set BUILDENV_NAME via the environment or in this script and re-run."
-        exit 1
+        # [TEMP arm64-appimage] Scaffold start — remove when the arm64-linux
+        # buildenv is published to downloads.mixxx.org. After removal, increase
+        # the indent of the lines below to match the un-commented block above.
+        : "${BUILDENV_NAME:=mixxx-deps-2.7-arm64-linux-3eb83513}"
+        # [TEMP arm64-appimage] Scaffold end.
+        # Un-comment the block below once the scaffold is removed:
+        # : "${BUILDENV_NAME:=mixxx-deps-2.7-arm64-linux}"
+        # echo "ERROR: arm64-linux buildenv is not yet published by Mixxx."
+        # echo "Once a mixxx-deps-<version>-arm64-linux-XXXXXXXX.zip appears on"
+        # echo "https://downloads.mixxx.org/dependencies/<version>/Linux/,"
+        # echo "set BUILDENV_NAME via the environment or in this script and re-run."
+        # exit 1
         ;;
     *)
         echo "ERROR: Unsupported architecture detected: $HOST_ARCH"
