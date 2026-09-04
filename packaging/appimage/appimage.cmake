@@ -27,144 +27,75 @@ install(
   RENAME "mixxx-appimage.desktop"
 )
 
-# Bundle the shared libraries from the VCPKG buildenv that Mixxx links
-# against (the binary's RUNPATH is $ORIGIN/../lib, set by CPack, so they
-# must end up in AppDir/lib).  The system libraries Mixxx depends on are
-# expected to be provided by the host system.
-# If a future buildenv build turns another dependency into a shared
-# library, add it to the exclusion list below.
-file(
-  GLOB _appimage_buildenv_shared_libraries
-  "${MIXXX_VCPKG_ROOT}/installed/${VCPKG_TARGET_TRIPLET}/lib/*.so*"
+# Install the runtime dependencies of the mixxx binary into AppDir/lib
+# (the binary's RUNPATH is $ORIGIN/../lib, set by CPack, so bundled
+# libraries must end up in the top-level lib/).
+#
+# The library set is determined dynamically from the actual dependencies of
+# the mixxx binary at install time, so newly introduced dependencies are
+# bundled automatically without maintaining a per-library list.  Libraries
+# that must be provided by the host system are excluded, based on the
+# official AppImage excludelist (see linuxdeploy, which maintains it):
+# https://github.com/probonopd/AppImages/blob/master/excludelist
+# These are the C library and compiler runtime, GPU driver libraries, the
+# core X11 client libraries (which must match the running X server), and
+# sound server client libraries (which must match the local server).
+install(
+  RUNTIME_DEPENDENCY_SET
+  mixxx_runtime_deps
+  LIBRARY
+  DESTINATION
+  "${CMAKE_INSTALL_LIBDIR}"
+  DIRECTORIES "${MIXXX_VCPKG_ROOT}/installed/${VCPKG_TARGET_TRIPLET}/lib"
+  PRE_EXCLUDE_REGEXES
+    # glibc and the compiler runtime
+    "^ld-linux.*"
+    "^libc\\.so.*"
+    "^libm\\.so.*"
+    "^libdl\\.so.*"
+    "^libpthread\\.so.*"
+    "^librt\\.so.*"
+    "^libresolv\\.so.*"
+    "^libutil\\.so.*"
+    "^libnss_.*"
+    "^libmvec\\.so.*"
+    "^libanl\\.so.*"
+    "^libthread_db\\.so.*"
+    "^libcidn\\.so.*"
+    "^libBrokenLocale\\.so.*"
+    "^libstdc\\+\\+\\.so.*"
+    "^libgcc_s\\.so.*"
+    # GPU / display driver stack
+    "^libGL\\.so.*"
+    "^libEGL\\.so.*"
+    "^libGLX\\.so.*"
+    "^libOpenGL\\.so.*"
+    "^libGLdispatch\\.so.*"
+    "^libdrm\\.so.*"
+    "^libglapi\\.so.*"
+    "^libgbm\\.so.*"
+    # Core X11 client libraries (must match the running X server)
+    "^libX11\\.so.*"
+    "^libX11-xcb\\.so.*"
+    "^libxcb\\.so.*"
+    "^libxcb-dri2\\.so.*"
+    "^libxcb-dri3\\.so.*"
+    "^libwayland-client\\.so.*"
+    # Sound server client libraries (must match the local sound server)
+    "^libasound\\.so.*"
+    "^libjack\\.so.*"
+    "^libpipewire.*"
+    # Low-level font stack and other system essentials
+    "^libfontconfig\\.so.*"
+    "^libfreetype\\.so.*"
+    "^libharfbuzz\\.so.*"
+    "^libICE\\.so.*"
+    "^libSM\\.so.*"
+    "^libuuid\\.so.*"
+    "^libz\\.so.*"
+    "^libexpat\\.so.*"
+    "^libcom_err\\.so.*"
+    "^libgpg-error\\.so.*"
+    "^libusb-1\\.0\\.so.*"
+    "^libgmp\\.so.*"
 )
-# System/compiler libraries that must not be bundled into the AppImage.
-set(
-  _appimage_system_libraries
-  libc.so
-  libm.so
-  libstdc++.so
-  libgcc_s.so
-  ld-linux
-  libX11.so
-  libXext.so
-  libXrandr.so
-  libxcb.so
-  libEGL.so
-  libGLX.so
-  libOpenGL.so
-  libX11-xcb.so
-  libxkbcommon.so
-  libSM.so
-  libICE.so
-  libglib-2.0.so
-  libgobject-2.0.so
-  libgio-2.0.so
-  libgirepository-2.0.so
-  libgmodule-2.0.so
-  libgthread-2.0.so
-  libdbus-1.so
-  libpipewire-0.3.so
-  libpulse.so
-  libpulse-simple.so
-  libpulse-mainloop-glib.so
-  libupower-glib.so
-  libudev.so
-  libGrantlee_Templates.so
-  libGrantlee_TextDocument.so
-  liblo.so
-  libtag_c.so
-)
-set(_appimage_shared_libraries)
-foreach(_lib IN LISTS _appimage_buildenv_shared_libraries)
-  get_filename_component(_lib_name "${_lib}" NAME)
-  set(_excluded OFF)
-  foreach(_syslib IN LISTS _appimage_system_libraries)
-    # Match a leading substring (e.g. "libpulse.so" matches "libpulse.so.0.24.3").
-    # Use string(FIND) rather than MATCHES to avoid regex metacharacters
-    # like '+' in "libstdc++.so".
-    string(FIND "${_lib_name}" "${_syslib}" _lib_pos)
-    if(_lib_pos EQUAL 0)
-      set(_excluded ON)
-    endif()
-  endforeach()
-  if(NOT _excluded)
-    list(APPEND _appimage_shared_libraries "${_lib}")
-  endif()
-endforeach()
-if(_appimage_shared_libraries)
-  install(
-    FILES ${_appimage_shared_libraries}
-    DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-  )
-endif()
-
-# Bundle the xcb *extension* libraries that Qt's xcb platform plugin links
-# against.  These are system libraries of the build host (the vcpkg qtbase
-# port resolves xcb through pkg-config), so they are not part of the
-# buildenv and are not covered by the glob above.  The core X11 stack
-# (libX11, libxcb.so.1, ...) is installed on every desktop, but the xcb
-# extension libraries -- in particular the newer libxcb-cursor -- are not,
-# so bundle the ones Mixxx links against into the AppImage.
-set(
-  _appimage_xcb_extension_libraries
-  libxcb-cursor
-  libxcb-glx
-  libxcb-icccm
-  libxcb-image
-  libxcb-keysyms
-  libxcb-randr
-  libxcb-render
-  libxcb-render-util
-  libxcb-shape
-  libxcb-shm
-  libxcb-sync
-  libxcb-util
-  libxcb-xfixes
-  libxcb-xinput
-  libxcb-xkb
-)
-set(_appimage_multiarch_dir "")
-if(CMAKE_LIBRARY_ARCHITECTURE)
-  set(_appimage_multiarch_dir "/usr/lib/${CMAKE_LIBRARY_ARCHITECTURE}")
-else()
-  # Fall back to the compiler's implicit link directories.
-  foreach(_dir IN LISTS CMAKE_CXX_IMPLICIT_LINK_DIRECTORIES)
-    if(_dir MATCHES "/usr/lib/.*-linux-gnu$" AND EXISTS "${_dir}/libxcb.so.1")
-      set(_appimage_multiarch_dir "${_dir}")
-      break()
-    endif()
-  endforeach()
-endif()
-if(_appimage_multiarch_dir)
-  foreach(_name IN LISTS _appimage_xcb_extension_libraries)
-    file(
-      GLOB _appimage_xcb_candidates
-      "${_appimage_multiarch_dir}/${_name}.so.*"
-    )
-    foreach(_cand IN LISTS _appimage_xcb_candidates)
-      # Keep only the SONAME file (libxcb-cursor.so.0), not the deeper
-      # versioned file (libxcb-cursor.so.0.0.0).
-      if(_cand MATCHES "${_name}\\.so\\.[0-9]+$")
-        file(REAL_PATH "${_cand}" _appimage_xcb_real)
-        get_filename_component(_appimage_xcb_soname "${_cand}" NAME)
-        install(
-          FILES "${_appimage_xcb_real}"
-          DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-          RENAME "${_appimage_xcb_soname}"
-        )
-        break()
-      endif()
-    endforeach()
-  endforeach()
-endif()
-unset(_appimage_buildenv_shared_libraries)
-unset(_appimage_system_libraries)
-unset(_appimage_shared_libraries)
-unset(_appimage_lib_name)
-unset(_appimage_excluded)
-unset(_appimage_syslib)
-unset(_appimage_xcb_extension_libraries)
-unset(_appimage_multiarch_dir)
-unset(_appimage_xcb_candidates)
-unset(_appimage_xcb_real)
-unset(_appimage_xcb_soname)
