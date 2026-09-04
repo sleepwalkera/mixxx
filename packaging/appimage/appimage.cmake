@@ -40,12 +40,25 @@ install(
 # These are the C library and compiler runtime, GPU driver libraries, the
 # core X11 client libraries (which must match the running X server), and
 # sound server client libraries (which must match the local server).
+
+# Collect the runtime dependency set from the mixxx binary.  A target's
+# dependency set can only be populated by an install(TARGETS) call, so mixxx
+# is installed a second time here (to the same destination as the generic
+# rule above, which is a harmless idempotent copy).
+install(
+  TARGETS mixxx
+  # The RUNTIME_DEPENDENCY_SET keyword must precede the artifact options
+  # (RUNTIME/BUNDLE DESTINATION), or native install() rejects it.
+  RUNTIME_DEPENDENCY_SET mixxx_runtime_deps
+  RUNTIME DESTINATION "${MIXXX_INSTALL_BINDIR}"
+  BUNDLE DESTINATION .
+)
 install(
   RUNTIME_DEPENDENCY_SET
   mixxx_runtime_deps
-  LIBRARY
-  DESTINATION
-  "${CMAKE_INSTALL_LIBDIR}"
+  # The resolution options (DIRECTORIES, PRE_EXCLUDE_REGEXES, ...) must
+  # precede the artifact group (LIBRARY DESTINATION), or install() rejects
+  # them as unknown arguments.
   DIRECTORIES "${MIXXX_VCPKG_ROOT}/installed/${VCPKG_TARGET_TRIPLET}/lib"
   PRE_EXCLUDE_REGEXES
     # glibc and the compiler runtime
@@ -98,4 +111,7 @@ install(
     "^libgpg-error\\.so.*"
     "^libusb-1\\.0\\.so.*"
     "^libgmp\\.so.*"
+  LIBRARY
+  DESTINATION
+  "${CMAKE_INSTALL_LIBDIR}"
 )

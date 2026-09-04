@@ -2567,11 +2567,6 @@ if(NOT ANDROID)
     TARGETS mixxx
     RUNTIME DESTINATION "${MIXXX_INSTALL_BINDIR}"
     BUNDLE DESTINATION .
-    # Collect the runtime dependencies of the mixxx binary so the AppImage
-    # packaging can install them into the AppDir.  No effect for other
-    # packaging (the set is only consumed by an install(RUNTIME_DEPENDENCY_SET)
-    # rule that exists only in the AppImage packaging).
-    RUNTIME_DEPENDENCY_SET mixxx_runtime_deps
   )
 
   # Skins
