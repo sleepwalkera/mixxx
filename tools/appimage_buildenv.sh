@@ -43,7 +43,8 @@ case "$HOST_ARCH" in
         if [ -n "${BUILDENV_RELEASE}" ]; then
             : "${VCPKG_TARGET_TRIPLET:=x64-linux-release}"
             : "${BUILDENV_BRANCH:=2.7-rel}"
-            : "${BUILDENV_NAME:=mixxx-deps-2.7-x64-linux-rel-8177263d}"
+            : "${BUILDENV_NAME:=mixxx-deps-2.7-x64-linux-rel-1a666b7b}"
+            : "${BUILDENV_SHA256:=13be47162d6846c92875fc211692c583a5bf995bbe6fb74d063c768eac862709}"
         else
             : "${VCPKG_TARGET_TRIPLET:=x64-linux}"
             : "${BUILDENV_BRANCH:=2.7}"
@@ -68,8 +69,6 @@ case "$HOST_ARCH" in
     *)
         echo "ERROR: Unsupported architecture detected: $HOST_ARCH"
         echo "The AppImage buildenv is currently only available for x86_64 and aarch64."
-        echo "Please refer to the following guide:"
-        echo "https://github.com/mixxxdj/mixxx/wiki/Compiling-dependencies-for-Linux"
         exit 1
         ;;
 esac
