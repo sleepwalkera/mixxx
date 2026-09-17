@@ -220,18 +220,11 @@ jobs:
         env:
           BUILDENV_BASEPATH: ${{ matrix.buildenv_basepath }}
 
-      - name: "[AppImage] Export Qt QML import path"
-        if: matrix.buildenv_script == 'tools/appimage_buildenv.sh'
-        run: |
-          QML_DIR="${MIXXX_VCPKG_ROOT}/installed/${VCPKG_TARGET_TRIPLET}/Qt6/qml"
-          echo "QML2_IMPORT_PATH=${QML_DIR}" >> "${GITHUB_ENV}"
-          echo "QML_IMPORT_PATH=${QML_DIR}" >> "${GITHUB_ENV}"
 
       # TEMP: pre-download a not-yet-published buildenv from the fork CI
       # artifact and place it where the buildenv scripts expect it.
-      # [EXPERIMENT] Disabled to use the published 969b62ea buildenv instead.
       - name: "[TEMP] Download x64-linux buildenv from fork artifact"
-        if: false
+        if: matrix.artifacts_slug == 'linux-appimage'
         run: |
           set -euxo pipefail
           mkdir -p "${BUILDENV_BASEPATH}"
@@ -260,9 +253,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: ${{ env.BUILDENV_BASEPATH }}/${{ env.BUILDENV_NAME }}
-          # [EXPERIMENT] Prefix the key so the cached FORK buildenv is not
-          # restored; force a fresh download of the published buildenv.
-          key: buildenv-published-${{ env.BUILDENV_NAME }}
+          key: buildenv-${{ env.BUILDENV_NAME }}
 
       - name: "[TEMP] Verify Qt5Compat QML module in buildenv"
         if: matrix.artifacts_slug == 'linux-appimage'
@@ -383,6 +374,9 @@ jobs:
           # Windows tests fail randomly if run in parallel
           CTEST_PARALLEL_LEVEL: 1
           CTEST_OUTPUT_ON_FAILURE: 1
+          # [TEMP] Diagnostic: dump the QML import path list of the controller
+          # script engine for the mapping tests.
+          QT_LOGGING_RULES: "controller.*.debug=true"
 
       - name: "[Windows] Sign executables"
         env:
