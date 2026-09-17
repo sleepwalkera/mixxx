@@ -374,9 +374,10 @@ jobs:
           # Windows tests fail randomly if run in parallel
           CTEST_PARALLEL_LEVEL: 1
           CTEST_OUTPUT_ON_FAILURE: 1
-          # [TEMP] Diagnostic: dump the QML import path list of the controller
-          # script engine for the mapping tests.
-          QT_LOGGING_RULES: "controller.*.debug=true"
+          # [TEMP] Diagnostic: trace Qt's QML import resolution for the
+          # failing mapping tests (logs every import path search).
+          QML_IMPORT_TRACE: 1
+          QT_LOGGING_RULES: "qt.qml.imports.debug=true"
 
       - name: "[Windows] Sign executables"
         env:
