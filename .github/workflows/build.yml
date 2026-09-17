@@ -223,8 +223,9 @@ jobs:
       - name: "[AppImage] Export Qt QML import path"
         if: matrix.buildenv_script == 'tools/appimage_buildenv.sh'
         run: |
-          echo "QML2_IMPORT_PATH=${MIXXX_VCPKG_ROOT}/installed/${VCPKG_TARGET_TRIPLET}/lib/Qt6/qml" >> "${GITHUB_ENV}"
-          echo "QML_IMPORT_PATH=${MIXXX_VCPKG_ROOT}/installed/${VCPKG_TARGET_TRIPLET}/lib/Qt6/qml" >> "${GITHUB_ENV}"
+          QML_DIR="${MIXXX_VCPKG_ROOT}/installed/${VCPKG_TARGET_TRIPLET}/Qt6/qml"
+          echo "QML2_IMPORT_PATH=${QML_DIR}" >> "${GITHUB_ENV}"
+          echo "QML_IMPORT_PATH=${QML_DIR}" >> "${GITHUB_ENV}"
 
       # TEMP: pre-download a not-yet-published buildenv from the fork CI
       # artifact and place it where the buildenv scripts expect it.
@@ -259,6 +260,13 @@ jobs:
         with:
           path: ${{ env.BUILDENV_BASEPATH }}/${{ env.BUILDENV_NAME }}
           key: buildenv-${{ env.BUILDENV_NAME }}
+
+      - name: "[TEMP] Verify Qt5Compat QML module in buildenv"
+        if: matrix.artifacts_slug == 'linux-appimage'
+        run: |
+          QML_DIR="${MIXXX_VCPKG_ROOT}/installed/${VCPKG_TARGET_TRIPLET}/Qt6/qml"
+          echo "QML_DIR=${QML_DIR}"
+          ls -la "${QML_DIR}/Qt5Compat/GraphicalEffects/" || echo "!! Qt5Compat.GraphicalEffects NOT PRESENT at ${QML_DIR}/Qt5Compat/GraphicalEffects/"
 
       - name: "[Windows] Set up build environment"
         if: matrix.buildenv_script != null && runner.os == 'Windows'
