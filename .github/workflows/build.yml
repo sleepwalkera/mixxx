@@ -223,8 +223,9 @@ jobs:
 
       # TEMP: pre-download a not-yet-published buildenv from the fork CI
       # artifact and place it where the buildenv scripts expect it.
-      - name: "[TEMP] Download x64-linux buildenv from fork artifact"
-        if: matrix.artifacts_slug == 'linux-appimage'
+      # [TRACE EXPERIMENT] Disabled to test with the published 969b62ea buildenv.
+      - name: "X [TEMP] Download x64-linux buildenv from fork artifact"
+        if: false
         run: |
           set -euxo pipefail
           mkdir -p "${BUILDENV_BASEPATH}"
@@ -253,7 +254,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: ${{ env.BUILDENV_BASEPATH }}/${{ env.BUILDENV_NAME }}
-          key: buildenv-${{ env.BUILDENV_NAME }}
+          key: buildenv-published-trace-${{ env.BUILDENV_NAME }}
 
       - name: "[TEMP] Verify Qt5Compat QML module in buildenv"
         if: matrix.artifacts_slug == 'linux-appimage'
