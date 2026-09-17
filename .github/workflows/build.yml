@@ -223,9 +223,8 @@ jobs:
 
       # TEMP: pre-download a not-yet-published buildenv from the fork CI
       # artifact and place it where the buildenv scripts expect it.
-      # [TRACE EXPERIMENT] Disabled to test with the published 969b62ea buildenv.
-      - name: "X [TEMP] Download x64-linux buildenv from fork artifact"
-        if: false
+      - name: "[TEMP] Download x64-linux buildenv from fork artifact"
+        if: matrix.artifacts_slug == 'linux-appimage'
         run: |
           set -euxo pipefail
           mkdir -p "${BUILDENV_BASEPATH}"
@@ -254,7 +253,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: ${{ env.BUILDENV_BASEPATH }}/${{ env.BUILDENV_NAME }}
-          key: buildenv-published-trace-${{ env.BUILDENV_NAME }}
+          key: buildenv-${{ env.BUILDENV_NAME }}
 
       - name: "[TEMP] Verify Qt5Compat QML module in buildenv"
         if: matrix.artifacts_slug == 'linux-appimage'
@@ -375,10 +374,6 @@ jobs:
           # Windows tests fail randomly if run in parallel
           CTEST_PARALLEL_LEVEL: 1
           CTEST_OUTPUT_ON_FAILURE: 1
-          # [TEMP] Diagnostic: trace Qt's QML import resolution for the
-          # failing mapping tests (logs every import path search).
-          QML_IMPORT_TRACE: 1
-          QT_LOGGING_RULES: "qt.qml.imports.debug=true"
 
       - name: "[Windows] Sign executables"
         env:

@@ -3062,7 +3062,11 @@ if(BUILD_TESTING)
     )
   endif()
 
-  add_executable(mixxx-test ${src-mixxx-test})
+  if(QT6 AND QML)
+    qt_add_executable(mixxx-test ${src-mixxx-test} MANUAL_FINALIZATION)
+  else()
+    add_executable(mixxx-test ${src-mixxx-test})
+  endif()
   target_compile_definitions(
     mixxx-test
     PUBLIC RESOURCE_FOLDER="${CMAKE_CURRENT_SOURCE_DIR}/res"
@@ -5497,6 +5501,10 @@ target_precompile_headers(
 )
 if(BUILD_TESTING AND NOT CMAKE_DISABLE_PRECOMPILE_HEADERS)
   target_precompile_headers(mixxx-test REUSE_FROM mixxx-lib)
+endif()
+
+if(BUILD_TESTING AND QT6 AND QML)
+  qt_finalize_target(mixxx-test)
 endif()
 
 # Configure file with build options
