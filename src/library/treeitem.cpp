@@ -60,19 +60,22 @@ TreeItem* TreeItem::child(int row) const {
 
 void TreeItem::insertChild(int row, std::unique_ptr<TreeItem> pChild) {
     DEBUG_ASSERT(pChild);
+    DEBUG_ASSERT(!pChild->m_pParent);
     DEBUG_ASSERT(!pChild->m_pFeature ||
             pChild->m_pFeature == m_pFeature);
     DEBUG_ASSERT(row >= 0);
     DEBUG_ASSERT(row <= m_children.size());
     if (pChild->m_pParent != nullptr) {
         // Defensive: a TreeItem must never be reachable under two parents.
-        // The old DEBUG_ASSERT(!pChild->m_pParent) is compiled out in release
-        // builds, so handing insertChild() an already parented item used to
-        // overwrite its parent pointer while the previous parent still listed
-        // it as a child - leaving the tree malformed (an item under two
-        // parents), which made TreeItemModel::parentRow()/parent()
-        // inconsistent and could drive QAbstractItemModel::match() into an
-        // unbounded walk. Detach the child from its previous parent first.
+        // The DEBUG_ASSERT above is compiled out in release builds, so an
+        // already parented item used to get its parent pointer overwritten
+        // while the previous parent still listed it as a child - leaving the
+        // tree malformed (an item under two parents), which made
+        // TreeItemModel::parentRow()/parent() inconsistent and could drive
+        // QAbstractItemModel::match() into an unbounded walk. Detach the
+        // child from its previous parent first. (The detach bypasses the
+        // model's begin/endRemoveRows: the tree is already inconsistent at
+        // this point, and callers rebuild the model afterwards.)
         TreeItem* pOldParent = pChild->m_pParent;
         const int oldRow = pOldParent->m_children.indexOf(pChild.get());
         if (oldRow != kInvalidRow) {
