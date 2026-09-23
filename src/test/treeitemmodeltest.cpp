@@ -34,7 +34,19 @@ struct SidebarTree {
 
 } // namespace
 
-class TreeItemModelTest : public testing::Test {};
+class TreeItemModelTest : public testing::Test {
+  protected:
+    // Corrupts the tree on purpose: orphans the year node (drops its parent
+    // pointer while it is still listed as a child of the root), as if a tree
+    // rebuild had gone wrong. TreeItem::parentRow() then returns
+    // TreeItem::kInvalidRow for the year node. A friend of TreeItem (this
+    // class) may touch the private parent pointer; the TEST_F()-generated
+    // subclasses inherit the test body but not the friendship.
+    static void orphanYearNode(TreeItemModel& model) {
+        TreeItem* pYear = model.getRootItem()->child(5);
+        pYear->m_pParent = nullptr;
+    }
+};
 
 TEST_F(TreeItemModelTest, FindItemByDataFindsTopLevelItem) {
     SidebarTree tree;
@@ -117,15 +129,13 @@ TEST_F(TreeItemModelTest, ParentOfChildOfOrphanedParentStaysValid) {
     TreeItem* pOld = pYear->child(0);
     ASSERT_NE(pOld, nullptr);
 
-    // Simulate a malformed tree: the year node loses its parent pointer while
-    // it is still listed as a child of the root (as can happen when a tree is
-    // rebuilt from existing items). TreeItem::parentRow() then returns
-    // TreeItem::kInvalidRow for the year node, and
+    // Simulate a malformed tree (see orphanYearNode): the year node loses its
+    // parent pointer while still listed as a child of the root.
     // TreeItemModel::parent(pOld) used to hand back createIndex(-1, 0, pYear)
     // - an index that is invalid (negative row) yet carries a non-null
     // pointer. QAbstractItemModel::match() then treats it as the root, falls
     // back to the model's row count and re-enters this subtree forever.
-    pYear->m_pParent = nullptr;
+    orphanYearNode(tree.model);
 
     QModelIndex idxOld = tree.model.indexFromItem(pOld);
     ASSERT_TRUE(idxOld.isValid());
