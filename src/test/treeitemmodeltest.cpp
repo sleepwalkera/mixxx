@@ -135,10 +135,13 @@ TEST_F(TreeItemModelTest, ParentOfChildOfOrphanedParentStaysValid) {
     // A recursive match must terminate instead of running forever.
     QElapsedTimer timer;
     timer.start();
+    // Use a value that matches nothing: the year node's payload is -1, so
+    // searching for -1 would short-circuit at the top level. A non-matching
+    // value forces the recursive walk into the (malformed) year subtree.
     const QModelIndexList hits = tree.model.match(
             tree.model.getRootIndex(),
             TreeItemModel::kDataRole,
-            QVariant(-1),
+            QVariant(999),
             1,
             Qt::MatchWrap | Qt::MatchExactly | Qt::MatchRecursive);
     EXPECT_LT(timer.elapsed(), 3000); // must not hang
