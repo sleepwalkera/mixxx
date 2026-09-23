@@ -218,7 +218,9 @@ TreeItem* TreeItemModel::findItemByDataRecursive(
     if (pTreeItem == nullptr) {
         return nullptr;
     }
-    if (pTreeItem->getData() == data) {
+    // The root item has no payload (empty QVariant); do not let an
+    // empty lookup accidentally match it.
+    if (!pTreeItem->isRoot() && pTreeItem->getData() == data) {
         return pTreeItem;
     }
     for (TreeItem* pChild : pTreeItem->children()) {

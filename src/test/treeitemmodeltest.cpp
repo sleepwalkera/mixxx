@@ -14,7 +14,9 @@ struct SidebarTree {
     TreeItemModel model;
 
     explicit SidebarTree() {
-        auto pRoot = TreeItem::newRoot(nullptr);
+        // newRoot() DEBUG_ASSERTs a non-null feature; a plain TreeItem
+        // (no parent) is all the model lookup needs here.
+        auto pRoot = std::make_unique<TreeItem>();
 
         // 5 recent playlists at the top level
         for (int i = 1; i <= 5; ++i) {
