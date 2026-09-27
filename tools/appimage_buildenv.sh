@@ -53,17 +53,16 @@ case "$HOST_ARCH" in
         fi
         ;;
     aarch64)
-        VCPKG_TARGET_TRIPLET="arm64-linux"
-        : "${BUILDENV_BRANCH:=2.7}"
-        # The arm64-linux buildenv is not yet published by Mixxx, but an
-        # explicit BUILDENV_NAME / BUILDENV_URL override (e.g. a CI artifact)
-        # is still honoured.
-        if [ -z "${BUILDENV_NAME+x}" ] && [ -z "${BUILDENV_URL+x}" ]; then
-            echo "ERROR: arm64-linux buildenv is not yet published by Mixxx."
-            echo "Once a mixxx-deps-<version>-arm64-linux-XXXXXXXX.zip appears on"
-            echo "https://downloads.mixxx.org/dependencies/<version>/Linux/,"
-            echo "set BUILDENV_NAME via the environment or in this script and re-run."
-            exit 1
+        if [ -n "${BUILDENV_RELEASE}" ]; then
+            : "${VCPKG_TARGET_TRIPLET:=arm64-linux-release}"
+            : "${BUILDENV_BRANCH:=2.7-rel}"
+            : "${BUILDENV_NAME:=mixxx-deps-2.7-arm64-linux-rel-1aa052b2}"
+            : "${BUILDENV_SHA256:=cfda05dd076fd0e636d389aa03358bd7d8dc26bb73c31a67948554faf3ccfafb}"
+        else
+            : "${VCPKG_TARGET_TRIPLET:=arm64-linux}"
+            : "${BUILDENV_BRANCH:=2.7}"
+            : "${BUILDENV_NAME:=mixxx-deps-2.7-arm64-linux-43d30ad9}"
+            : "${BUILDENV_SHA256:=ea6b196eb0c1f3890df26c02b43ffc0d33c13d3e98ad8bf801d460f5748be804}"
         fi
         ;;
     *)
