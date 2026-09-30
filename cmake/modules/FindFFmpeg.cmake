@@ -259,22 +259,56 @@ if(FFmpeg_FOUND)
   endforeach()
 
   # When libavcodec is static it may have been built with --enable-libfdk-aac.
-  # Add FdkAac::FdkAac as a transitive dep so the final linker resolves the
-  # aacEnc*/aacDec* symbols (mirrors FindChromaprint.cmake's FFTW3 pattern).
+  # Add the fdk-aac library as a transitive dep so the final linker resolves
+  # the aacEnc*/aacDec* symbols (mirrors FindChromaprint.cmake's FFTW3
+  # pattern).  The 2.6 buildenv's vcpkg fdk-aac port exports the
+  # FDK-AAC::fdk-aac target via find_package(fdk-aac).
   if(TARGET FFmpeg::avcodec)
     is_static_library(_avcodec_static FFmpeg::avcodec)
     if(_avcodec_static)
-      find_package(FdkAac QUIET)
-      if(FdkAac_FOUND)
+      find_package(fdk-aac QUIET)
+      if(TARGET FDK-AAC::fdk-aac)
         set_property(
           TARGET FFmpeg::avcodec
           APPEND
-          PROPERTY INTERFACE_LINK_LIBRARIES FdkAac::FdkAac
+          PROPERTY INTERFACE_LINK_LIBRARIES FDK-AAC::fdk-aac
         )
-        # Also append to the cached FFmpeg_LIBRARIES variable so any remaining
-        # consumers that use "${FFmpeg_LIBRARIES}" directly (e.g. legacy call
-        # sites) also get the dependency resolved.
-        list(APPEND FFmpeg_LIBRARIES ${FdkAac_LIBRARY})
+        find_library(FDK_AAC_LIBRARY NAMES fdk-aac)
+        if(FDK_AAC_LIBRARY)
+          # Also append to the cached FFmpeg_LIBRARIES variable so any
+          # consumers that use "${FFmpeg_LIBRARIES}" directly (e.g. the
+          # LINK_GROUP:RESCAN wrapper) also get the dependency resolved.
+          list(APPEND FFmpeg_LIBRARIES ${FDK_AAC_LIBRARY})
+          set(
+            FFmpeg_LIBRARIES
+            ${FFmpeg_LIBRARIES}
+            CACHE STRING
+            "The FFmpeg libraries."
+            FORCE
+          )
+        endif()
+      endif()
+    endif()
+    unset(_avcodec_static)
+  endif()
+
+  # When libavformat is static it may have been built with --enable-libopus
+  # (the 2.6 buildenv uses the fedora-ffmpeg-free-safe feature set); add the
+  # opus library so the ogg_opus muxer's opus_multistream_* symbols resolve.
+  if(TARGET FFmpeg::avformat)
+    is_static_library(_avformat_static FFmpeg::avformat)
+    if(_avformat_static)
+      find_package(Opus QUIET)
+      if(TARGET Opus::opus)
+        set_property(
+          TARGET FFmpeg::avformat
+          APPEND
+          PROPERTY INTERFACE_LINK_LIBRARIES Opus::opus
+        )
+      endif()
+      find_library(OPUS_LIBRARY NAMES opus)
+      if(OPUS_LIBRARY)
+        list(APPEND FFmpeg_LIBRARIES ${OPUS_LIBRARY})
         set(
           FFmpeg_LIBRARIES
           ${FFmpeg_LIBRARIES}
@@ -284,7 +318,7 @@ if(FFmpeg_FOUND)
         )
       endif()
     endif()
-    unset(_avcodec_static)
+    unset(_avformat_static)
   endif()
 
   # On Apple platforms the static FFmpeg libraries reference VideoToolbox,
