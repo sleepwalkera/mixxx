@@ -248,7 +248,11 @@ jobs:
           git remote add origin "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY"
           git -c http.extraheader="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)" \
             fetch --quiet --force origin "+${GITHUB_SHA}:refs/remotes/origin/${GITHUB_REF_NAME}" --tags
-          git checkout -q FETCH_HEAD
+          # Stage the git-archive'd files, then reset hard to FETCH_HEAD so
+          # the worktree matches the fetched commit deterministically (a plain
+          # checkout refuses to overwrite the untracked archive files).
+          git add -A
+          git reset --hard -q FETCH_HEAD
 
       - name: "[Arch Linux] Workaround for the 'unsafe repository' issue caused by CVE-2022-24765"
         if: matrix.container != null
