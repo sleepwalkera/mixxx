@@ -186,6 +186,12 @@ jobs:
               -DQML=ON
               -DMIXXX_APPIMAGE=ON
               -DINSTALL_USER_UDEV_RULES=OFF
+              # Pin the gcc-toolset-12 compiler explicitly: CMake's automatic
+              # detection of it fails inside the rockylinux:8 container
+              # ("compiler identification is unknown"), while the compiler
+              # itself compiles, links and runs fine.
+              -DCMAKE_C_COMPILER=/opt/rh/gcc-toolset-12/root/usr/bin/cc
+              -DCMAKE_CXX_COMPILER=/opt/rh/gcc-toolset-12/root/usr/bin/c++
               -DCMAKE_CXX_FLAGS_RELWITHDEBINFO="-O2 -DNDEBUG"
               -DCMAKE_INSTALL_PREFIX=/usr
               -DCMAKE_INSTALL_LIBDIR=lib
