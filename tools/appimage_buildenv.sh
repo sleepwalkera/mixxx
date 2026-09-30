@@ -301,6 +301,10 @@ case "$1" in
             echo "MIXXX_VCPKG_ROOT=${MIXXX_VCPKG_ROOT}"
             echo "VCPKG_TARGET_TRIPLET=${VCPKG_TARGET_TRIPLET}"
             echo "CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}"
+            # The CPack AppImage generator runs appimagetool (itself an
+            # AppImage); the CI container has no /dev/fuse, so run it
+            # extracted.
+            echo "APPIMAGE_EXTRACT_AND_RUN=1"
         }
 
         if [ -n "${GITHUB_ENV}" ]; then
