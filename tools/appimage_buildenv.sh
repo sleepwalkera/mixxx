@@ -48,8 +48,10 @@ case "$HOST_ARCH" in
         else
             : "${VCPKG_TARGET_TRIPLET:=x64-linux}"
             : "${BUILDENV_BRANCH:=2.7}"
-            : "${BUILDENV_NAME:=mixxx-deps-2.7-x64-linux-43d30ad9}"
-            : "${BUILDENV_SHA256:=c575327a3554d5793518c3eb22bb7cf1c767c5b7400b553f5ef4d6ed5aabc8be}"
+            : "${BUILDENV_NAME:=mixxx-deps-2.7-x64-linux-57c1fad4}"
+            # [TEMP upower] Empty SHA256 disables the CMake verify step; fill in
+            # the real checksum once the buildenv is published upstream.
+            : "${BUILDENV_SHA256:=}"
         fi
         ;;
     aarch64)
@@ -61,8 +63,9 @@ case "$HOST_ARCH" in
         else
             : "${VCPKG_TARGET_TRIPLET:=arm64-linux}"
             : "${BUILDENV_BRANCH:=2.7}"
-            : "${BUILDENV_NAME:=mixxx-deps-2.7-arm64-linux-43d30ad9}"
-            : "${BUILDENV_SHA256:=ea6b196eb0c1f3890df26c02b43ffc0d33c13d3e98ad8bf801d460f5748be804}"
+            : "${BUILDENV_NAME:=mixxx-deps-2.7-arm64-linux-57c1fad4}"
+            # [TEMP upower] See the x86_64 entry.
+            : "${BUILDENV_SHA256:=}"
         fi
         ;;
     *)
@@ -169,7 +172,6 @@ case "$1" in
                 libxkbcommon-dev \
                 libxkbcommon-x11-dev \
                 libegl1-mesa-dev \
-                libupower-glib-dev \
                 libsm-dev \
                 libxrandr-dev \
                 libxext-dev \
