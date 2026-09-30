@@ -200,11 +200,8 @@ jobs:
             buildenv_basepath: /home/runner/buildenv
             buildenv_script: tools/appimage_buildenv.sh
             # [TEMP rocky8] GitHub Actions artifact id of the vcpkg fork's CI
-            # run #91 (arm64-linux, glibc 2.28).  The #91 buildenv predates the
-            # upower port, so BATTERY is disabled below; switch the id to the
-            # #92 artifact and re-enable BATTERY once that run is green.
-            buildenv_artifact_id: 11086077105
-            battery_enabled: 'false'
+            # run #92 (arm64-linux, glibc 2.28, includes the upower port).
+            buildenv_artifact_id: 11092294083
             artifacts_name: AppImage Linux aarch64
             artifacts_path: build/*.AppImage
             artifacts_slug: linux-appimage-arm64
@@ -245,6 +242,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
           cd "$GITHUB_WORKSPACE"
           git init -q
           git remote add origin "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY"
