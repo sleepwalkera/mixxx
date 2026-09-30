@@ -194,6 +194,7 @@ jobs:
               -DQML=ON
               -DMIXXX_APPIMAGE=ON
               -DBUILD_TESTING=OFF
+              -DBUILD_BENCH=OFF
               -DINSTALL_USER_UDEV_RULES=OFF
               -DCMAKE_C_COMPILER=/opt/rh/gcc-toolset-12/root/usr/bin/cc
               -DCMAKE_CXX_COMPILER=/opt/rh/gcc-toolset-12/root/usr/bin/c++
@@ -212,8 +213,9 @@ jobs:
             buildenv_basepath: /home/runner/buildenv
             buildenv_script: tools/appimage_buildenv.sh
             # [TEMP rocky8] GitHub Actions artifact id of the vcpkg fork's CI
-            # run #92 (arm64-linux, glibc 2.28, includes the upower port).
-            buildenv_artifact_id: 11092294083
+            # run #102 (arm64-linux, glibc 2.28, includes the upower port and
+            # the chromaprint 1.6.1 rebuild).
+            buildenv_artifact_id: 11115798356
             artifacts_name: AppImage Linux aarch64
             artifacts_path: build/*.AppImage
             artifacts_slug: linux-appimage-arm64
