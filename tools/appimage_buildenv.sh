@@ -201,6 +201,8 @@ case "$1" in
                 xcb-util-keysyms-devel \
                 xcb-util-renderutil-devel \
                 xcb-util-cursor-devel \
+                glibc-devel \
+                kernel-headers \
                 pipewire-libs \
                 || { echo "ERROR: Failed to install AppImage system packages"; _mixxx_fail; }
             # The gcc-toolset-12 toolchain provides the compiler used for the
