@@ -183,6 +183,8 @@ jobs:
             # automatic detection of it fails inside the rockylinux:8
             # container ("compiler identification is unknown"), while the
             # compiler itself compiles, links and runs fine.
+            # GCC 12 emits false-positive -Warray-bounds in Qt QVariant code;
+            # suppress it while keeping -Werror for everything else.
             os: ubuntu-24.04-arm
             container: rockylinux:8
             cmake_args: >-
@@ -192,6 +194,7 @@ jobs:
               -DINSTALL_USER_UDEV_RULES=OFF
               -DCMAKE_C_COMPILER=/opt/rh/gcc-toolset-12/root/usr/bin/cc
               -DCMAKE_CXX_COMPILER=/opt/rh/gcc-toolset-12/root/usr/bin/c++
+              -DCMAKE_CXX_FLAGS=-Wno-error=array-bounds
               -DCMAKE_CXX_FLAGS_RELWITHDEBINFO="-O2 -DNDEBUG"
               -DCMAKE_INSTALL_PREFIX=/usr
               -DCMAKE_INSTALL_LIBDIR=lib
