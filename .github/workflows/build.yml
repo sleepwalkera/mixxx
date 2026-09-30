@@ -37,6 +37,11 @@ on:
         required: false
       PPA_SSH_PRIVATE_KEY:
         required: false
+      # [TEMP rocky8] Personal access token used to fetch the not-yet-published
+      # 2.6 buildenv from the vcpkg fork's CI artifact.  Remove once the buildenv
+      # is published to downloads.mixxx.org.
+      GH_PAT:
+        required: false
 
 permissions:
   contents: read #  to fetch code (actions/checkout)
@@ -170,6 +175,40 @@ jobs:
             artifacts_path: build/*.msi
             artifacts_slug: windows-winarm
             arch: arm64
+          - name: AppImage Linux aarch64
+            # [TEMP rocky8] Test scaffold: build the 2.6 AppImage in a
+            # glibc-2.28 Rocky 8 container against the Rocky-8-built buildenv,
+            # so the resulting binaries stay at glibc 2.28.
+            os: ubuntu-24.04-arm
+            container: rockylinux:8
+            cmake_args: >-
+              -DQT6=ON
+              -DQML=ON
+              -DMIXXX_APPIMAGE=ON
+              -DINSTALL_USER_UDEV_RULES=OFF
+              -DCMAKE_CXX_FLAGS_RELWITHDEBINFO="-O2 -DNDEBUG"
+              -DCMAKE_INSTALL_PREFIX=/usr
+              -DCMAKE_INSTALL_LIBDIR=lib
+              -DCMAKE_EXE_LINKER_FLAGS="-Wl,--allow-shlib-undefined"
+            ctest_args: []
+            compiler_cache: ccache
+            compiler_cache_path: /home/runner/.cache/ccache
+            compiler_cache_id: appimage-qt6
+            # A static build far exceeds the default 2G ccache limit.
+            compiler_cache_max_size: 10G
+            cpack_generator: AppImage
+            buildenv_basepath: /home/runner/buildenv
+            buildenv_script: tools/appimage_buildenv.sh
+            # [TEMP rocky8] GitHub Actions artifact id of the vcpkg fork's CI
+            # run #91 (arm64-linux, glibc 2.28).  The #91 buildenv predates the
+            # upower port, so BATTERY is disabled below; switch the id to the
+            # #92 artifact and re-enable BATTERY once that run is green.
+            buildenv_artifact_id: 11086077105
+            battery_enabled: 'false'
+            artifacts_name: AppImage Linux aarch64
+            artifacts_path: build/*.AppImage
+            artifacts_slug: linux-appimage-arm64
+            arch: aarch64
 
     env:
       # macOS codesigning
@@ -267,11 +306,53 @@ jobs:
           echo "CMAKE_ARGS_EXTRA=${CMAKE_ARGS_EXTRA} -DAPPLE_CODESIGN_IDENTITY=${APPLE_CODESIGN_IDENTITY}" >> "${GITHUB_ENV}"
           echo "APPLE_CODESIGN_IDENTITY=${APPLE_CODESIGN_IDENTITY}" >> $GITHUB_ENV
 
+      - name: "[AppImage] Set up cmake"
+        # The CPack AppImage generator requires CMake >= 4.2, which is not
+        # available from dnf on the rockylinux:8 container.
+        if: startsWith(matrix.buildenv_script, 'tools/appimage_')
+        uses: jwlawson/actions-setup-cmake@v2.2
+        with:
+          cmake-version: "4.2.x"
+
       - name: "[macOS/Linux] Set up build environment"
         if: matrix.buildenv_script != null && runner.os != 'Windows'
         run: ${{ matrix.buildenv_script }} setup
         env:
           BUILDENV_BASEPATH: ${{ matrix.buildenv_basepath }}
+
+      - name: "[AppImage] Cache buildenv"
+        # The buildenv is downloaded and extracted during the configure step
+        # (several GB).  Cache the extracted tree so re-runs of the AppImage
+        # jobs reuse it; the BUILDENV_NAME carries the buildenv hash, so a
+        # new buildenv naturally invalidates the cache entry.
+        if: startsWith(matrix.buildenv_script, 'tools/appimage_')
+        uses: actions/cache@v6
+        with:
+          path: ${{ env.BUILDENV_BASEPATH }}/${{ env.BUILDENV_NAME }}
+          key: buildenv-${{ env.BUILDENV_NAME }}
+
+      # [TEMP rocky8] Remove this step once the 2.6 buildenv is published to
+      # downloads.mixxx.org.  It fetches the buildenv from the vcpkg fork's
+      # CI artifact (requires GH_PAT), instead of the downloads.mixxx.org URL
+      # that tools/appimage_buildenv.sh points at by default.
+      - name: "[TEMP rocky8] Fetch buildenv from vcpkg fork artifact"
+        if: startsWith(matrix.buildenv_script, 'tools/appimage_')
+        env:
+          BUILDENV_ARTIFACT_ID: ${{ matrix.buildenv_artifact_id }}
+          GH_PAT: ${{ secrets.GH_PAT }}
+        run: |
+          mkdir -p "${BUILDENV_BASEPATH}"
+          if [ ! -f "${BUILDENV_BASEPATH}/${BUILDENV_NAME}.zip" ]; then
+            curl -sL \
+              -H "Authorization: Bearer ${GH_PAT}" \
+              -H "Accept: application/vnd.github+json" \
+              -o "${BUILDENV_BASEPATH}/${BUILDENV_NAME}.zip" \
+              "https://api.github.com/repos/sleepwalkera/vcpkg/actions/artifacts/${BUILDENV_ARTIFACT_ID}/zip"
+          fi
+          if [ "$(stat -c%s "${BUILDENV_BASEPATH}/${BUILDENV_NAME}.zip")" -lt 1000000000 ]; then
+            echo "ERROR: downloaded buildenv is suspiciously small"
+            exit 1
+          fi
 
       - name: "[Windows] Set up build environment"
         if: matrix.buildenv_script != null && runner.os == 'Windows'
@@ -306,7 +387,7 @@ jobs:
         # build with debug info exceeds 2G and evicts its own objects.
         run: |
           ${{ matrix.compiler_cache }} --zero-stats
-          ${{ matrix.compiler_cache }} --max-size=2G
+          ${{ matrix.compiler_cache }} --max-size=${{ matrix.compiler_cache_max_size || '2G' }}
         if: runner.os != 'windows'
 
       - name: "Create build directory"
@@ -319,7 +400,7 @@ jobs:
           -DCMAKE_PREFIX_PATH="${{ env.CMAKE_PREFIX_PATH }}"
           -DWARNINGS_FATAL=ON
           -DDEBUG_ASSERTIONS_FATAL=OFF
-          -DBATTERY=ON
+          -DBATTERY=${{ matrix.battery_enabled != 'false' && 'ON' || 'OFF' }}
           -DBROADCAST=ON
           -DDOWNLOAD_MANUAL=ON
           -DHID=ON
@@ -526,7 +607,8 @@ jobs:
         # also generates metadata for file artifact and write it to the job
         # output using the artifacts_slug value.
         id: prepare_deploy
-        if: inputs.publish && matrix.artifacts_path != null
+        # The AppImage is published via the appimage.yml reusable workflow.
+        if: inputs.publish && matrix.artifacts_path != null && matrix.cpack_generator != 'AppImage'
         shell: bash
         run: >
           if [[ "${{ inputs.ref }}" =~ ^refs/tags/.* ]];
@@ -612,8 +694,18 @@ jobs:
         run: |
           echo "C:/Windows/System32;C:/ProgramData/Chocolatey/bin" >> $GITHUB_PATH
 
+      - name: "[AppImage] Upload AppImage"
+        # The AppImage is uploaded uncompressed (archive: false), so the
+        # artifact name equals the file name; appimage.yml matches it by
+        # pattern for publishing.
+        if: matrix.cpack_generator == 'AppImage'
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          archive: "false"
+          path: ${{ matrix.artifacts_path }}
+
       - name: "Upload GitHub Actions artifacts"
-        if: matrix.artifacts_path != null
+        if: matrix.artifacts_path != null && matrix.cpack_generator != 'AppImage'
         uses: actions/upload-artifact@v7.0.1
         with:
           archive: "false"

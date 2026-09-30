@@ -75,6 +75,9 @@ jobs:
     with:
       branch: ${{ github.head_ref || github.ref_name }}
       ref: ${{ github.ref }}
+    # [TEMP rocky8] Pass through all secrets (GH_PAT for the vcpkg fork
+    # buildenv artifact fetch).  Remove once the buildenv is published.
+    secrets: inherit
 
   # This task is used as a probe for auto merge
   # In the future, it could also be used to perform a status update (e.g once the whole CI is passing + is ready for review, add a specific label such as `need review`)

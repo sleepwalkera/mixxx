@@ -48,7 +48,7 @@ if(POLICY CMP0135)
   cmake_policy(SET CMP0135 NEW)
 endif()
 
-if(((APPLE AND NOT IOS) OR WIN32) AND NOT IS_DIRECTORY "${MIXXX_VCPKG_ROOT}")
+if((DEFINED ENV{BUILDENV_URL} OR (APPLE AND NOT IOS) OR WIN32) AND NOT IS_DIRECTORY "${MIXXX_VCPKG_ROOT}")
   if(NOT DEFINED BUILDENV_BASEPATH)
     if(DEFINED ENV{BUILDENV_BASEPATH})
       set(BUILDENV_BASEPATH "$ENV{BUILDENV_BASEPATH}")
@@ -350,6 +350,28 @@ endif()
 include(CMakeDependentOption)
 
 option(QT6 "Build with Qt6" ON)
+option(
+  MIXXX_APPIMAGE
+  "Build for AppImage distribution (install AppImage-specific desktop file)"
+  OFF
+)
+# Auto-detect AppImage builds in both directions, so the two flags do not
+# need to be passed independently:
+#   cmake -DCPACK_GENERATOR=AppImage  -> enables the AppImage install rules
+#   cmake -DMIXXX_APPIMAGE=ON         -> cpack defaults to the AppImage generator
+if(CPACK_GENERATOR MATCHES "AppImage")
+  set(MIXXX_APPIMAGE ON CACHE BOOL "" FORCE)
+endif()
+if(MIXXX_APPIMAGE AND NOT DEFINED CPACK_GENERATOR)
+  set(CPACK_GENERATOR "AppImage" CACHE STRING "Package generator")
+endif()
+# mold 1.0.3 emits a .rela.dyn layout the dynamic loader cannot process,
+# which made the AppImage fail to start (verified fixed in mold 2.42).
+# Use the default linker for AppImage builds; users can still opt in
+# explicitly with -DMOLD_SUPPORT=ON.
+if(MIXXX_APPIMAGE OR CPACK_GENERATOR MATCHES "AppImage")
+  set(MOLD_SUPPORT OFF CACHE BOOL "Use 'mold' for linking")
+endif()
 
 # Because of multiple concurrent definition of symbols caused by the rendergraph
 # compile definition we need to disable QML by default. This avoids the risk of
@@ -2473,6 +2495,11 @@ if(UNIX AND NOT APPLE)
     FILES "${CMAKE_CURRENT_SOURCE_DIR}/res/linux/org.mixxx.Mixxx.desktop"
     DESTINATION "${CMAKE_INSTALL_DATADIR}/applications"
   )
+
+  # AppImage-specific install rules (desktop file, shared libraries).
+  if(MIXXX_APPIMAGE)
+    include("${CMAKE_CURRENT_SOURCE_DIR}/packaging/appimage/appimage.cmake")
+  endif()
 
   # Icon files for menu entry
   install(

@@ -52,3 +52,8 @@ if(CPACK_GENERATOR STREQUAL "External")
     set(CPACK_EXTERNAL_PACKAGE_SCRIPT "${CPACK_DEBIAN_UPLOAD_PPA_SCRIPT}")
   endif()
 endif()
+
+if(CPACK_GENERATOR STREQUAL "AppImage")
+  set(CPACK_APPIMAGE_DESKTOP_FILE "mixxx-appimage.desktop")
+  set(CPACK_PACKAGE_ICON "mixxx.png")
+endif()
