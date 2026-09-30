@@ -179,6 +179,10 @@ jobs:
             # [TEMP rocky8] Test scaffold: build the 2.6 AppImage in a
             # glibc-2.28 Rocky 8 container against the Rocky-8-built buildenv,
             # so the resulting binaries stay at glibc 2.28.
+            # The gcc-toolset-12 compiler is pinned explicitly because CMake's
+            # automatic detection of it fails inside the rockylinux:8
+            # container ("compiler identification is unknown"), while the
+            # compiler itself compiles, links and runs fine.
             os: ubuntu-24.04-arm
             container: rockylinux:8
             cmake_args: >-
@@ -186,10 +190,6 @@ jobs:
               -DQML=ON
               -DMIXXX_APPIMAGE=ON
               -DINSTALL_USER_UDEV_RULES=OFF
-              # Pin the gcc-toolset-12 compiler explicitly: CMake's automatic
-              # detection of it fails inside the rockylinux:8 container
-              # ("compiler identification is unknown"), while the compiler
-              # itself compiles, links and runs fine.
               -DCMAKE_C_COMPILER=/opt/rh/gcc-toolset-12/root/usr/bin/cc
               -DCMAKE_CXX_COMPILER=/opt/rh/gcc-toolset-12/root/usr/bin/c++
               -DCMAKE_CXX_FLAGS_RELWITHDEBINFO="-O2 -DNDEBUG"
