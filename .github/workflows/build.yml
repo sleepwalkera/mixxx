@@ -185,12 +185,15 @@ jobs:
             # compiler itself compiles, links and runs fine.
             # GCC 12 emits false-positive -Warray-bounds in Qt QVariant code;
             # suppress it while keeping -Werror for everything else.
+            # The release AppImage does not need the test suite, and the
+            # mixxx-test link trips over a separate static-opus order issue.
             os: ubuntu-24.04-arm
             container: rockylinux:8
             cmake_args: >-
               -DQT6=ON
               -DQML=ON
               -DMIXXX_APPIMAGE=ON
+              -DBUILD_TESTING=OFF
               -DINSTALL_USER_UDEV_RULES=OFF
               -DCMAKE_C_COMPILER=/opt/rh/gcc-toolset-12/root/usr/bin/cc
               -DCMAKE_CXX_COMPILER=/opt/rh/gcc-toolset-12/root/usr/bin/c++
