@@ -15,6 +15,10 @@ on:
         type: string
         required: true
     secrets:
+      # [TEMP upower] Personal access token used to fetch the not-yet-published
+      # buildenv from the vcpkg fork's CI artifact.  Remove with the TEMP step.
+      GH_PAT:
+        required: false
       AZURE_CLIENT_ID:
         required: false
       AZURE_CLIENT_SECRET:
