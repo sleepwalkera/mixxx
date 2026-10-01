@@ -103,6 +103,18 @@ def is_elf(path):
         return False
 
 
+def elf_bits(path):
+    """ELF class of a file: 1 (32-bit), 2 (64-bit), or None."""
+    try:
+        with open(path, "rb") as f:
+            data = f.read(6)
+        if data[:4] != b"\x7fELF":
+            return None
+        return data[4]  # e_ident[EI_CLASS]
+    except OSError:
+        return None
+
+
 def ldconfig_map():
     """soname -> path, from the host's dynamic linker cache."""
     ldconfig = shutil.which("ldconfig")
@@ -133,28 +145,39 @@ def _matches_soname(entry, soname):
     return entry == soname or entry.startswith(soname + ".")
 
 
-def find_system_soname(soname, sysmap):
-    """Resolve a soname from the host system, via the cache or a file scan."""
+def find_system_soname(soname, sysmap, want_bits):
+    """Resolve a soname from the host system, via the cache or a file scan.
+
+    Multilib hosts carry the same soname in 32-bit and 64-bit trees (e.g.
+    /lib32 vs /lib/x86_64-linux-gnu); only accept a candidate whose ELF
+    class matches the binary being checked.
+    """
     if soname in sysmap:
-        return sysmap[soname]
+        path = sysmap[soname]
+        if want_bits is None or elf_bits(path) == want_bits:
+            return path
     for base in _SYSTEM_SEARCH_ROOTS:
         if not os.path.isdir(base):
             continue
         for root, _dirs, files in os.walk(base):
             for entry in files:
                 path = os.path.join(root, entry)
-                if _matches_soname(entry, soname) and is_elf(path):
+                if not _matches_soname(entry, soname):
+                    continue
+                if is_elf(path) and (
+                    want_bits is None or elf_bits(path) == want_bits
+                ):
                     return path
     return None
 
 
-def find_in_dir(soname, libdir):
+def find_in_dir(soname, libdir, want_bits):
     """Find the ELF matching a soname in libdir."""
     for entry in os.listdir(libdir):
         if not _matches_soname(entry, soname):
             continue
         path = os.path.join(libdir, entry)
-        if is_elf(path):
+        if is_elf(path) and (want_bits is None or elf_bits(path) == want_bits):
             return path
     return None
 
@@ -211,6 +234,7 @@ def main():
 
 def _run_check(binary, libdir):
     sysmap = ldconfig_map()
+    want_bits = elf_bits(binary)
 
     # Dynamic-linking closure: start from the binary, follow DT_NEEDED.
     worklist = [binary]
@@ -236,9 +260,9 @@ def _run_check(binary, libdir):
 
         for soname in needed_sonames(elf):
             # resolve the soname: buildenv lib dir first, then the host system
-            path = find_in_dir(soname, libdir)
+            path = find_in_dir(soname, libdir, want_bits)
             if path is None:
-                path = find_system_soname(soname, sysmap)
+                path = find_system_soname(soname, sysmap, want_bits)
             if path is None or not os.path.isfile(path):
                 missing_libs.append(soname)
                 continue
