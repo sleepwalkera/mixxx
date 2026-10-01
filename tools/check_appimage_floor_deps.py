@@ -204,7 +204,10 @@ def main():
     unresolved = []
     for name in sorted(undef):
         wanted = undef[name]
-        have = resolvable.get(name)
+        # defaultdict.get() returns None for a missing key, which would crash
+        # the versioned check below; index instead so a missing name yields
+        # the empty set.
+        have = resolvable[name]
         # An unversioned reference needs the name at all; a versioned one
         # needs the exact version.  Check every reference independently so a
         # same-name unversioned reference cannot mask a versioned mismatch.
