@@ -16,11 +16,13 @@ Behaviour beyond the symbol level is covered separately by running the
 AppImage on the same 22.04 runner (the existing smoke test) and by the test
 suite, which executes against the built binary on that floor.
 
-Invoked as a CI step in the AppImage jobs (like the smoke test); the build
-host in CI is Ubuntu 22.04, which is the floor the AppImage targets.
+Invoked as a CI step in the AppImage jobs (like the smoke test) against the
+packaged AppImage; the build host in CI is Ubuntu 22.04, which is the floor
+the AppImage targets.
 
 Usage:
-  check_appimage_floor_deps.py <mixxx-binary> <buildenv-lib-dir>
+  check_appimage_floor_deps.py <AppImage>            # CI: check the packaged AppImage
+  check_appimage_floor_deps.py <mixxx-binary> <lib-dir>   # testing: walk a given closure
 """
 
 import collections
@@ -29,6 +31,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 
 
 def split_version(raw):
@@ -158,8 +161,6 @@ def find_in_dir(soname, libdir):
 
 def extract_appimage(appimage):
     """Self-extract an AppImage into a temp dir, return (binary, libdir)."""
-    import tempfile
-
     tmp = tempfile.mkdtemp(prefix="floor-deps-")
     try:
         subprocess.run(
@@ -206,8 +207,6 @@ def main():
 
 
 def _run_check(binary, libdir):
-    sysmap = ldconfig_map()
-
     sysmap = ldconfig_map()
 
     # Dynamic-linking closure: start from the binary, follow DT_NEEDED.
