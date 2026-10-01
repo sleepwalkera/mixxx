@@ -161,6 +161,9 @@ def find_in_dir(soname, libdir):
 
 def extract_appimage(appimage):
     """Self-extract an AppImage into a temp dir, return (binary, libdir)."""
+    # The runner passes a workspace-relative path, which would not resolve
+    # in the extraction cwd; resolve it against the script's cwd first.
+    appimage = os.path.abspath(appimage)
     tmp = tempfile.mkdtemp(prefix="floor-deps-")
     try:
         subprocess.run(
