@@ -218,12 +218,15 @@ def _run_check(binary, libdir):
     undef = collections.defaultdict(set)  # name -> set(versions)
     resolvable = collections.defaultdict(set)  # name -> set(versions)
     missing_libs = []
+    stdlib_path = None  # diagnostics: which libstdc++ satisfied the closure
 
     while worklist:
         elf = worklist.pop()
         if elf in processed:
             continue
         processed.add(elf)
+        if os.path.basename(elf).startswith("libstdc++"):
+            stdlib_path = elf
 
         u, d = dynsyms(elf)
         for name, versions in u.items():
@@ -268,7 +271,13 @@ def _run_check(binary, libdir):
     if unresolved:
         print("\nUNRESOLVED on the Ubuntu 22.04 floor:")
         for name, ver in unresolved[:50]:
-            print(f"  {name}@{ver}")
+            have = resolvable.get(name)
+            if have:
+                print(f"  {name}@{ver}   (name exists at {sorted(have)})")
+            else:
+                print(f"  {name}@{ver}   (name absent from all walked libs)")
+        if stdlib_path:
+            print(f"  [libstdc++ resolved from: {stdlib_path}]")
         print(
             f"\nFAIL: {len(unresolved)} symbol(s) not satisfiable by the floor."
         )
