@@ -3121,22 +3121,6 @@ if(BUILD_TESTING)
   include(GoogleTest)
   enable_testing()
 
-  # The AppImage delegates fontconfig, freetype, harfbuzz, alsa and the base
-  # system stack to the host, so the shipped binary must not reference
-  # symbols or symbol versions that the Ubuntu 22.04 floor cannot provide
-  # (headers from newer vcpkg ports could introduce them without a runtime
-  # check noticing until too late).  Walk the binary's dynamic-linking
-  # closure against the build host's own libraries, the floor in CI.
-  if(MIXXX_APPIMAGE AND CMAKE_SYSTEM_NAME STREQUAL "Linux" AND DEFINED MIXXX_VCPKG_ROOT)
-    add_test(
-      NAME appimage_floor_deps
-      COMMAND python3 "${CMAKE_CURRENT_SOURCE_DIR}/tools/check_appimage_floor_deps.py"
-              "$<TARGET_FILE:mixxx>"
-              "${MIXXX_VCPKG_ROOT}/installed/${VCPKG_TARGET_TRIPLET}/lib"
-    )
-    set_tests_properties(appimage_floor_deps PROPERTIES LABELS "appimage")
-  endif()
-
   file(
     GLOB_RECURSE CONTROLLER_BULK_MAPPING_LIST
     "${CMAKE_CURRENT_SOURCE_DIR}/res/controllers/*.bulk.xml"

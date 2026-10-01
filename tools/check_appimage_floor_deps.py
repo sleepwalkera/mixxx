@@ -16,6 +16,9 @@ Behaviour beyond the symbol level is covered separately by running the
 AppImage on the same 22.04 runner (the existing smoke test) and by the test
 suite, which executes against the built binary on that floor.
 
+Invoked as a CI step in the AppImage jobs (like the smoke test); the build
+host in CI is Ubuntu 22.04, which is the floor the AppImage targets.
+
 Usage:
   check_appimage_floor_deps.py <mixxx-binary> <buildenv-lib-dir>
 """
