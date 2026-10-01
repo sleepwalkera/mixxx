@@ -156,10 +156,44 @@ def find_in_dir(soname, libdir):
     return None
 
 
+def extract_appimage(appimage):
+    """Self-extract an AppImage into a temp dir, return (binary, libdir)."""
+    import tempfile
+
+    tmp = tempfile.mkdtemp(prefix="floor-deps-")
+    try:
+        subprocess.run(
+            [appimage, "--appimage-extract"],
+            cwd=tmp,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        root = os.path.join(tmp, "squashfs-root")
+        binary = os.path.join(root, "bin", "mixxx")
+        libdir = os.path.join(root, "lib")
+        if not os.path.isfile(binary) or not os.path.isdir(libdir):
+            raise SystemExit(f"unexpected AppImage layout in {root}")
+        return binary, libdir, tmp
+    except Exception as e:
+        shutil.rmtree(tmp, ignore_errors=True)
+        raise SystemExit(f"cannot extract AppImage {appimage}: {e}")
+
+
 def main():
-    if len(sys.argv) != 3:
+    if len(sys.argv) not in (2, 3):
         print(__doc__, file=sys.stderr)
         return 2
+    if len(sys.argv) == 2:
+        appimage = sys.argv[1]
+        if not os.path.isfile(appimage):
+            print(f"ERROR: AppImage not found: {appimage}", file=sys.stderr)
+            return 2
+        binary, libdir, tmp = extract_appimage(appimage)
+        try:
+            return _run_check(binary, libdir)
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
     binary = sys.argv[1]
     libdir = sys.argv[2]
     if not os.path.isfile(binary):
@@ -168,6 +202,11 @@ def main():
     if not os.path.isdir(libdir):
         print(f"ERROR: buildenv lib dir not found: {libdir}", file=sys.stderr)
         return 2
+    return _run_check(binary, libdir)
+
+
+def _run_check(binary, libdir):
+    sysmap = ldconfig_map()
 
     sysmap = ldconfig_map()
 
