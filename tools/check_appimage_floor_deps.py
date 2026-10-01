@@ -31,6 +31,19 @@ import subprocess
 import sys
 
 
+def split_version(raw):
+    """Split a dynsym name into (name, version); None = unversioned.
+
+    readelf renders versioned symbols as name@VERSION and the default
+    version as name@@VERSION, so strip any leading '@' from the version.
+    """
+    if "@" not in raw:
+        return raw, None
+    name, _, version = raw.rpartition("@")
+    name = name.rstrip("@")
+    return name, version
+
+
 def dynsyms(path):
     """Return (undefined, defined) as {name: set(versions)}; None = unversioned."""
     out = subprocess.run(
@@ -45,28 +58,22 @@ def dynsyms(path):
         parts = line.split()
         if len(parts) < 8:
             continue
-        if parts[6] != "UND":  # Ndx column
-            continue
         raw = parts[7]
-        # Name[@VERSION][@@VERSION]
-        name, _, version = raw.partition("@")
-        version = version or None
-        if name:
-            undefined[name].add(version)
-    # Defined symbols from a second pass are collected from the same table;
-    # entries with Ndx != UND are the definitions.
-    for line in out.splitlines():
-        parts = line.split()
-        if len(parts) < 8:
+        if not raw:
             continue
         if parts[6] == "UND":
-            continue
-        raw = parts[7]
-        if not raw or raw.startswith("."):
-            continue
-        name, _, version = raw.partition("@")
-        version = version or None
-        defined[name].add(version)
+            # Weak undefined symbols are optional: the loader tolerates a
+            # missing provider, so they must not fail the floor check.
+            if parts[4] != "GLOBAL":
+                continue
+            name, version = split_version(raw)
+            if name:
+                undefined[name].add(version)
+        else:
+            if raw.startswith("."):
+                continue
+            name, version = split_version(raw)
+            defined[name].add(version)
     return undefined, defined
 
 
