@@ -79,7 +79,10 @@ def dynsyms(path):
 
 def needed_sonames(path):
     out = subprocess.run(
-        ["readelf", "-d", "-W", path], capture_output=True, text=True, check=False
+        ["readelf", "-d", "-W", path],
+        capture_output=True,
+        text=True,
+        check=False,
     ).stdout
     result = set()
     for line in out.splitlines():
@@ -123,6 +126,10 @@ def ldconfig_map():
 _SYSTEM_SEARCH_ROOTS = ("/lib", "/usr/lib")
 
 
+def _matches_soname(entry, soname):
+    return entry == soname or entry.startswith(soname + ".")
+
+
 def find_system_soname(soname, sysmap):
     """Resolve a soname from the host system, via the cache or a file scan."""
     if soname in sysmap:
@@ -132,27 +139,20 @@ def find_system_soname(soname, sysmap):
             continue
         for root, _dirs, files in os.walk(base):
             for entry in files:
-                if entry == soname or entry.startswith(soname + "."):
-                    path = os.path.join(root, entry)
-                    if is_elf(path):
-                        return path
+                path = os.path.join(root, entry)
+                if _matches_soname(entry, soname) and is_elf(path):
+                    return path
     return None
 
 
 def find_in_dir(soname, libdir):
-    """Find a soname (or its symlink target) in libdir."""
-    for candidate in (
-        os.path.join(libdir, soname),
-        os.path.join(libdir, soname + ".0"),
-    ):
-        if os.path.isfile(candidate):
-            return candidate
-    # fall back to any matching .so* in the directory
+    """Find the ELF matching a soname in libdir."""
     for entry in os.listdir(libdir):
-        if entry == soname or entry.startswith(soname + "."):
-            full = os.path.join(libdir, entry)
-            if is_elf(full):
-                return full
+        if not _matches_soname(entry, soname):
+            continue
+        path = os.path.join(libdir, entry)
+        if is_elf(path):
+            return path
     return None
 
 
@@ -205,19 +205,18 @@ def main():
     for name in sorted(undef):
         wanted = undef[name]
         have = resolvable.get(name)
-        if not have:
-            unresolved.append((name, "any"))
-            continue
         # An unversioned reference needs the name at all; a versioned one
-        # needs the exact version.
-        if None in wanted:
-            continue  # the name exists, any version satisfies an unversioned ref
+        # needs the exact version.  Check every reference independently so a
+        # same-name unversioned reference cannot mask a versioned mismatch.
         for ver in wanted:
-            if ver is not None and ver not in have:
+            if ver is None:
+                if not have:
+                    unresolved.append((name, "any"))
+            elif ver not in have:
                 unresolved.append((name, ver))
 
     print(f"ELFs walked: {len(processed)}")
-    print(f"Undefined symbols: {sum(len(v) or 1 for v in undef.values())}")
+    print(f"Undefined symbols: {len(undef)}")
     print(f"Missing system libs: {len(missing_libs)}")
     for lib in sorted(set(missing_libs)):
         print(f"  MISSING LIB: {lib}")
@@ -226,12 +225,16 @@ def main():
         print("\nUNRESOLVED on the Ubuntu 22.04 floor:")
         for name, ver in unresolved[:50]:
             print(f"  {name}@{ver}")
-        print(f"\nFAIL: {len(unresolved)} symbol(s) not satisfiable by the floor.")
+        print(
+            f"\nFAIL: {len(unresolved)} symbol(s) not satisfiable by the floor."
+        )
         return 1
 
     if missing_libs:
-        print("\nWARNING: needed libraries absent from the build host (would "
-              "be delegated at runtime).")
+        print(
+            "\nWARNING: needed libraries absent from the build host (would "
+            "be delegated at runtime)."
+        )
     print("OK: every referenced symbol is satisfiable by the floor.")
     return 0
 
