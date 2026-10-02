@@ -147,6 +147,11 @@ case "$1" in
             fi
             # XCB packages needed to link the static Qt plugin from the
             # buildenv; keep in sync with the buildenv's Qt build.
+            # binutils (readelf) feeds the appimage_floor_deps check; the
+            # libharfbuzz0b/libfontconfig1/libfreetype6/libasound2/libjack0
+            # runtime packages are the delegated floor libraries the check
+            # resolves against, and libpipewire is a delegated dependency of
+            # the AppImage that the bare runner lacks.
             sudo apt-get install -y --no-install-recommends \
                 ccache \
                 g++ \
@@ -158,6 +163,13 @@ case "$1" in
                 "${FUSE_PKG}" \
                 unzip \
                 squashfs-tools \
+                binutils \
+                libharfbuzz0b \
+                libfontconfig1 \
+                libfreetype6 \
+                libasound2 \
+                libjack0 \
+                libpipewire-0.3-0 \
                 libsecret-1-dev \
                 libgcrypt20-dev \
                 libgpg-error-dev \
