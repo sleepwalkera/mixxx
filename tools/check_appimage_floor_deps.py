@@ -95,16 +95,8 @@ def needed_sonames(path):
     return result
 
 
-def is_elf(path):
-    try:
-        with open(path, "rb") as f:
-            return f.read(4) == b"\x7fELF"
-    except OSError:
-        return False
-
-
 def elf_bits(path):
-    """ELF class of a file: 1 (32-bit), 2 (64-bit), or None."""
+    """ELF class of a file: 1 (32-bit), 2 (64-bit), or None if not an ELF."""
     try:
         with open(path, "rb") as f:
             data = f.read(6)
@@ -164,8 +156,9 @@ def find_system_soname(soname, sysmap, want_bits):
                 path = os.path.join(root, entry)
                 if not _matches_soname(entry, soname):
                     continue
-                if is_elf(path) and (
-                    want_bits is None or elf_bits(path) == want_bits
+                bits = elf_bits(path)
+                if bits is not None and (
+                    want_bits is None or bits == want_bits
                 ):
                     return path
     return None
@@ -177,7 +170,8 @@ def find_in_dir(soname, libdir, want_bits):
         if not _matches_soname(entry, soname):
             continue
         path = os.path.join(libdir, entry)
-        if is_elf(path) and (want_bits is None or elf_bits(path) == want_bits):
+        bits = elf_bits(path)
+        if bits is not None and (want_bits is None or bits == want_bits):
             return path
     return None
 
@@ -200,7 +194,7 @@ def extract_appimage(appimage):
         binary = os.path.join(root, "bin", "mixxx")
         libdir = os.path.join(root, "lib")
         if not os.path.isfile(binary) or not os.path.isdir(libdir):
-            raise SystemExit(f"unexpected AppImage layout in {root}")
+            raise RuntimeError(f"unexpected AppImage layout in {root}")
         return binary, libdir, tmp
     except Exception as e:
         shutil.rmtree(tmp, ignore_errors=True)
@@ -242,15 +236,12 @@ def _run_check(binary, libdir):
     undef = collections.defaultdict(set)  # name -> set(versions)
     resolvable = collections.defaultdict(set)  # name -> set(versions)
     missing_libs = []
-    stdlib_path = None  # diagnostics: which libstdc++ satisfied the closure
 
     while worklist:
         elf = worklist.pop()
         if elf in processed:
             continue
         processed.add(elf)
-        if os.path.basename(elf).startswith("libstdc++"):
-            stdlib_path = elf
 
         u, d = dynsyms(elf)
         for name, versions in u.items():
@@ -259,7 +250,7 @@ def _run_check(binary, libdir):
             resolvable[name].update(versions)
 
         for soname in needed_sonames(elf):
-            # resolve the soname: buildenv lib dir first, then the host system
+            # bundled/AppImage lib dir first, then the host system
             path = find_in_dir(soname, libdir, want_bits)
             if path is None:
                 path = find_system_soname(soname, sysmap, want_bits)
@@ -295,13 +286,7 @@ def _run_check(binary, libdir):
     if unresolved:
         print("\nUNRESOLVED on the Ubuntu 22.04 floor:")
         for name, ver in unresolved[:50]:
-            have = resolvable.get(name)
-            if have:
-                print(f"  {name}@{ver}   (name exists at {sorted(have)})")
-            else:
-                print(f"  {name}@{ver}   (name absent from all walked libs)")
-        if stdlib_path:
-            print(f"  [libstdc++ resolved from: {stdlib_path}]")
+            print(f"  {name}@{ver}")
         print(
             f"\nFAIL: {len(unresolved)} symbol(s) not satisfiable by the floor."
         )
