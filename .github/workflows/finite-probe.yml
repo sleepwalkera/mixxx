@@ -1,0 +1,40 @@
+name: finite-probe
+
+on:
+  push:
+    branches:
+      - probe-finite-symbols
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: "glibc and libm *finite symbol versioning"
+        run: |
+          ldd --version | head -1
+          echo "--- __*_finite in libm ---"
+          nm -D /lib/x86_64-linux-gnu/libm.so.6 | grep -E "__exp(_2)?_finite" || echo "NOT EXPORTED"
+          echo "--- default vs non-default ---"
+          objdump -T /lib/x86_64-linux-gnu/libm.so.6 | grep -E "__exp(_2)?_finite" | head -6
+
+      - name: "reproduce the -ffast-math link failure"
+        run: |
+          cat > /tmp/tf.c <<'EOF'
+          #include <math.h>
+          double f(double x){ return exp(x) + exp2(x); }
+          EOF
+          gcc -ffast-math -c /tmp/tf.c -o /tmp/tf.o
+          echo "--- undefined refs in the object ---"
+          nm -u /tmp/tf.o
+          echo "--- link attempt (no fast-math on the final link) ---"
+          gcc /tmp/tf.o -o /tmp/tf -lm && echo "LINK OK" || echo "LINK FAILED"
+          echo "--- link attempt via lld ---"
+          gcc -fuse-ld=lld /tmp/tf.o -o /tmp/tf2 -lm 2>&1 | head -8 && echo "LLD LINK OK" || echo "LLD LINK FAILED"
+
+      - name: "versioned reference variant"
+        run: |
+          # What a Rocky8-built object (glibc 2.28 headers) references for exp
+          # cannot be reproduced here, but record the assembly the 2.35 headers emit.
+          echo "--- assembly for exp with -ffast-math ---"
+          gcc -ffast-math -S /tmp/tf.c -o - | grep -E "call|exp" | head
