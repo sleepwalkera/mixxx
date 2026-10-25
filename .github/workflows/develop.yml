@@ -78,6 +78,10 @@ jobs:
     with:
       branch: ${{ github.head_ref || github.ref_name }}
       ref: ${{ github.ref }}
+    # [TEMP buildenv] Propagate GH_PAT so the AppImage jobs can fetch the
+    # experiment buildenv artifact from the vcpkg fork.  Drop together with
+    # the fetch step.
+    secrets: inherit
 
   # This task is used as a probe for auto merge
   # In the future, it could also be used to perform a status update (e.g once the whole CI is passing + is ready for review, add a specific label such as `need review`)

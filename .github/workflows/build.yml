@@ -37,6 +37,11 @@ on:
         required: false
       PPA_SSH_PRIVATE_KEY:
         required: false
+      # [TEMP buildenv] Fetching the experiment buildenv from the vcpkg fork
+      # requires a PAT that can read the fork's action artifacts.  Drop this
+      # entry (and the fetch step) once the buildenv is published.
+      GH_PAT:
+        required: false
 
 permissions:
   contents: read #  to fetch code (actions/checkout)
@@ -204,6 +209,9 @@ jobs:
             cpack_generator: AppImage
             buildenv_basepath: /home/runner/buildenv
             buildenv_script: tools/appimage_release_buildenv.sh
+            # [TEMP buildenv] Artifact id of the vcpkg fork's experiment
+            # buildenv run; remove together with the fetch step.
+            buildenv_artifact_id: 12560306219
             artifacts_name: AppImage Linux aarch64
             artifacts_path: build/*.AppImage
             artifacts_slug: linux-appimage-arm64
@@ -232,6 +240,9 @@ jobs:
             cpack_generator: AppImage
             buildenv_basepath: /home/runner/buildenv
             buildenv_script: tools/appimage_release_buildenv.sh
+            # [TEMP buildenv] Artifact id of the vcpkg fork's experiment
+            # buildenv run; remove together with the fetch step.
+            buildenv_artifact_id: 12559794236
             artifacts_name: AppImage Linux x86_64
             artifacts_path: build/*.AppImage
             artifacts_slug: linux-appimage-x86_64
@@ -357,6 +368,48 @@ jobs:
         run: ${{ matrix.buildenv_script }} setup
         env:
           BUILDENV_BASEPATH: ${{ matrix.buildenv_basepath }}
+
+      # [TEMP buildenv] Remove this step once the experiment buildenv is
+      # published to downloads.mixxx.org.  The buildenv with the qtmultimedia
+      # ffmpeg backend, the SoundTouch fast-math fix and the qmltyperegistrar
+      # dedup backport exists only as a CI artifact of the vcpkg fork (needs
+      # GH_PAT).  The fork builds the non-release x64-linux/arm64-linux
+      # triplets, so the naming and prefix of the release script are
+      # overridden here; BUILDENV_SHA256 is cleared because the artifact has
+      # no published digest.  CMake skips its own download because the .zip
+      # already exists.
+      - name: "[TEMP buildenv] Fetch buildenv from vcpkg fork artifact"
+        if: matrix.cpack_generator == 'AppImage'
+        env:
+          BUILDENV_ARTIFACT_ID: ${{ matrix.buildenv_artifact_id }}
+        run: |
+          set -euxo pipefail
+          if [ "${{ matrix.arch }}" = "x86_64" ]; then
+            BUILDENV_TRIPLET="x64-linux"
+          else
+            BUILDENV_TRIPLET="arm64-linux"
+          fi
+          BUILDENV_NAME="mixxx-deps-2.6-${BUILDENV_TRIPLET}-16979d3"
+          mkdir -p "${BUILDENV_BASEPATH}"
+          if [ ! -f "${BUILDENV_BASEPATH}/${BUILDENV_NAME}.zip" ]; then
+            curl -fsSL \
+              -H "Authorization: Bearer ${{ secrets.GH_PAT }}" \
+              -H "Accept: application/vnd.github+json" \
+              -o "${BUILDENV_BASEPATH}/${BUILDENV_NAME}.zip" \
+              "https://api.github.com/repos/sleepwalkera/vcpkg/actions/artifacts/${BUILDENV_ARTIFACT_ID}/zip"
+          fi
+          # Fail loudly on a redirect body or truncated transfer instead of
+          # letting CMake choke on a tiny "zip" later.
+          if [ "$(stat -c%s "${BUILDENV_BASEPATH}/${BUILDENV_NAME}.zip")" -lt 1000000000 ]; then
+            echo "ERROR: downloaded buildenv is suspiciously small" >&2
+            exit 1
+          fi
+          echo "BUILDENV_NAME=${BUILDENV_NAME}" >> "${GITHUB_ENV}"
+          echo "VCPKG_TARGET_TRIPLET=${BUILDENV_TRIPLET}" >> "${GITHUB_ENV}"
+          echo "MIXXX_VCPKG_ROOT=${BUILDENV_BASEPATH}/${BUILDENV_NAME}" >> "${GITHUB_ENV}"
+          echo "CMAKE_PREFIX_PATH=${BUILDENV_BASEPATH}/${BUILDENV_NAME}/installed/${BUILDENV_TRIPLET}" >> "${GITHUB_ENV}"
+          echo "BUILDENV_SHA256=" >> "${GITHUB_ENV}"
+      # [TEMP buildenv] End.
 
       - name: "[Rocky8] Config ALSA null device"
         # The container has no sound card; point ALSA at a null device so the
