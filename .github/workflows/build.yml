@@ -404,7 +404,12 @@ jobs:
             echo "ERROR: downloaded buildenv is suspiciously small" >&2
             exit 1
           fi
+          # CMake derives BUILDENV_NAME from BUILDENV_URL and skips the
+          # download only when the resulting .zip exists, so point the URL at
+          # the pre-placed zip (file:// also lets CMake's file(DOWNLOAD)
+          # short-circuit without credentials).
           echo "BUILDENV_NAME=${BUILDENV_NAME}" >> "${GITHUB_ENV}"
+          echo "BUILDENV_URL=file://${BUILDENV_BASEPATH}/${BUILDENV_NAME}.zip" >> "${GITHUB_ENV}"
           echo "VCPKG_TARGET_TRIPLET=${BUILDENV_TRIPLET}" >> "${GITHUB_ENV}"
           echo "MIXXX_VCPKG_ROOT=${BUILDENV_BASEPATH}/${BUILDENV_NAME}" >> "${GITHUB_ENV}"
           echo "CMAKE_PREFIX_PATH=${BUILDENV_BASEPATH}/${BUILDENV_NAME}/installed/${BUILDENV_TRIPLET}" >> "${GITHUB_ENV}"
