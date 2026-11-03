@@ -414,7 +414,6 @@ jobs:
           echo "CMAKE_PREFIX_PATH=${BUILDENV_BASEPATH}/${BUILDENV_NAME}/installed/${BUILDENV_TRIPLET}" >> "${GITHUB_ENV}"
           echo "BUILDENV_SHA256=" >> "${GITHUB_ENV}"
       # [TEMP buildenv] End.
-
       - name: "[Rocky8] Config ALSA null device"
         # The container has no sound card; point ALSA at a null device so the
         # test suite can initialize the audio engine.  The alsa-lib package
