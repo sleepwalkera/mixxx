@@ -180,7 +180,7 @@ class MockAutoDJProcessor : public AutoDJProcessor {
 
     MOCK_METHOD3(emitLoadTrackToPlayer, void(TrackPointer, const QString&, bool));
     MOCK_METHOD1(emitAutoDJStateChanged, void(AutoDJProcessor::AutoDJState));
-    MOCK_METHOD1(startTransitionHold, void(DeckAttributes*));
+    MOCK_METHOD2(startTransitionHold, void(DeckAttributes*, double));
 };
 
 class AutoDJProcessorTest : public LibraryTest {
@@ -2109,8 +2109,8 @@ TEST_F(AutoDJProcessorTest, NegativeTimeRealSilence_GapThenCueEntry) {
     // The to deck starts only after the silence gap elapses. Simulate the
     // QTimer hold elapsing by playing the deck immediately.
     EXPECT_CALL(*pProcessor, emitAutoDJStateChanged(AutoDJProcessor::ADJ_LEFT_FADING));
-    EXPECT_CALL(*pProcessor, startTransitionHold(_))
-            .WillOnce(Invoke([](DeckAttributes* pDeck) { pDeck->play(); }));
+    EXPECT_CALL(*pProcessor, startTransitionHold(_, _))
+            .WillOnce(Invoke([](DeckAttributes* pDeck, double) { pDeck->play(); }));
 
     // Seek the playing track to its end to start the transition.
     deck1.playposition.set(1.0);
@@ -2168,19 +2168,24 @@ TEST_F(AutoDJProcessorTest, FadeNow_NegativeTimeRealSilence_KeepsGap) {
     // Simulate the cortina playing halfway.
     deck1.playposition.set(0.5);
 
-    // Fade now must not drop the silence gap: the deck is cut immediately and
-    // the gap is scheduled instead of playing the next deck right away.
+    // Fade now keeps the crossfader fade-out with a negative transition time
+    // and still schedules the real-silence gap instead of playing the next
+    // deck right away.
     EXPECT_CALL(*pProcessor, emitAutoDJStateChanged(AutoDJProcessor::ADJ_LEFT_FADING));
-    EXPECT_CALL(*pProcessor, startTransitionHold(_))
-            .WillOnce(Invoke([](DeckAttributes* pDeck) { pDeck->play(); }));
+    EXPECT_CALL(*pProcessor, startTransitionHold(_, _))
+            .WillOnce(Invoke([](DeckAttributes* pDeck, double) { pDeck->play(); }));
     pProcessor->fadeNow();
 
-    // The fade is instantaneous: the next position update starts the handover.
+    // The next position update starts the handover: the crossfader sweeps
+    // (the from deck keeps playing and fades out) instead of cutting hard.
     deck1.playposition.set(0.51);
 
     EXPECT_EQ(AutoDJProcessor::ADJ_LEFT_FADING, pProcessor->getState());
-    EXPECT_DOUBLE_EQ(0.0, deck1.play.get());
-    EXPECT_DOUBLE_EQ(1.0, deck2.play.get());
+    EXPECT_DOUBLE_EQ(1.0, deck1.play.get());
+    // The crossfader is in the middle of the sweep (not hard left or right).
+    EXPECT_GT(mixer.crossfader.get(), -1.0);
+    EXPECT_LT(mixer.crossfader.get(), 1.0);
     // The to deck starts from its cued start point after the gap elapses.
+    EXPECT_DOUBLE_EQ(1.0, deck2.play.get());
     EXPECT_DOUBLE_EQ(0.0, deck2.playposition.get());
 }

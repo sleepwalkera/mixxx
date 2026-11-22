@@ -266,7 +266,7 @@ class AutoDJProcessor : public QObject {
     // track starts playing. Used with negative transition times when
     // "NegativeTimeRealSilence" is enabled. Virtual so tests can simulate the
     // gap elapsing without a running event loop.
-    virtual void startTransitionHold(DeckAttributes* pToDeck);
+    virtual void startTransitionHold(DeckAttributes* pToDeck, double fadeSeconds);
 
   private:
     // Gets or sets the crossfader position while normalizing it so that -1 is

@@ -319,12 +319,7 @@ void AutoDJProcessor::fadeNow() {
     double spinboxTime = fabs(m_transitionTime);
 
     double fadeTime;
-    if (m_transitionTime < 0.0 && m_realSilenceGap) {
-        // "NegativeTimeRealSilence" is enabled: keep the real-silence gap (see
-        // startTransitionHold) and cut the from deck immediately, matching the
-        // automatic transition at the end of a track.
-        fadeTime = 0.0;
-    } else if (m_transitionMode == TransitionMode::FullIntroOutro ||
+    if (m_transitionMode == TransitionMode::FullIntroOutro ||
             m_transitionMode == TransitionMode::FadeAtOutroStart) {
         // Use the intro length as the transition time. If the user has seeked
         // away from the intro start since the track was loaded, start from
@@ -926,10 +921,14 @@ void AutoDJProcessor::playerPositionChanged(DeckAttributes* pAttributes,
 
                 if (m_transitionTime < 0.0 && m_realSilenceGap) {
                     // "NegativeTimeRealSilence" is enabled: do not start the
-                    // next track yet. Insert a real silence gap of
-                    // |transitionTime| seconds, then start it from its cued
+                    // next track yet. The from deck fades out first (if any),
+                    // then a real silence gap of |transitionTime| seconds
+                    // elapses before the next track starts from its cued
                     // start point.
-                    startTransitionHold(otherDeck);
+                    const double fadeSeconds =
+                            (thisDeck->fadeEndPos - thisDeck->fadeBeginPos) *
+                            getEndSecond(thisDeck);
+                    startTransitionHold(otherDeck, fadeSeconds);
                 } else if (!otherDeckPlaying) {
                     otherDeck->play();
                 }
@@ -1715,10 +1714,14 @@ void AutoDJProcessor::useFixedFadeTime(
     }
 }
 
-void AutoDJProcessor::startTransitionHold(DeckAttributes* pToDeck) {
+void AutoDJProcessor::startTransitionHold(
+        DeckAttributes* pToDeck, double fadeSeconds) {
     m_transitionHoldDeck = pToDeck;
     m_transitionHoldTimer.stop();
-    const double holdMs = -m_transitionTime * 1000.0;
+    // Wait for the from deck's fade (if any) to finish, then the real-silence
+    // gap of |m_transitionTime| seconds.
+    const double holdMs =
+            (fadeSeconds + (-m_transitionTime)) * 1000.0;
     m_transitionHoldTimer.start(holdMs < 1.0 ? 1 : static_cast<int>(holdMs));
 }
 
