@@ -159,12 +159,6 @@ DlgAutoDJ::DlgAutoDJ(WLibrary* parent,
     spinBoxTransition->setToolTip(spinBoxTransitionTooltip);
     labelTransitionAppendix->setToolTip(labelTransitionTooltip);
     fadeModeCombobox->setToolTip(fadeModeTooltip);
-    QString silenceGapTooltip = tr(
-            "Insert a real silence gap between tracks when the transition time\n"
-            "is negative, instead of seeking the next track back into the file.\n"
-            "The next track starts from its marked start point (intro start cue,\n"
-            "first sound or 0:00).");
-    checkBoxRealSilenceGap->setToolTip(silenceGapTooltip);
 
     // Prevent the interactive widgets from being focused with Tab or Shift+Tab
     fadeModeCombobox->setFocusPolicy(Qt::ClickFocus);
@@ -217,19 +211,6 @@ DlgAutoDJ::DlgAutoDJ(WLibrary* parent,
             &AutoDJProcessor::transitionTimeChanged,
             this,
             &DlgAutoDJ::transitionTimeChanged);
-
-    // The real-silence-gap behavior for negative transition times. Initialize
-    // before connecting to avoid a feedback loop through the setter.
-    checkBoxRealSilenceGap->setChecked(
-            m_pAutoDJProcessor->getRealSilenceGapEnabled());
-    connect(checkBoxRealSilenceGap,
-            &QCheckBox::toggled,
-            m_pAutoDJProcessor,
-            &AutoDJProcessor::setRealSilenceGapEnabled);
-    connect(m_pAutoDJProcessor,
-            &AutoDJProcessor::realSilenceGapChanged,
-            checkBoxRealSilenceGap,
-            &QCheckBox::setChecked);
 
     connect(m_pAutoDJProcessor,
             &AutoDJProcessor::autoDJError,

@@ -302,7 +302,46 @@
           </spacer>
         </item>
 
-        <item row="1" column="0" colspan="3">
+        <item row="1" column="0">
+          <widget class="QLabel" name="SilenceGapLabel">
+            <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+              </sizepolicy>
+            </property>
+            <property name="text">
+              <string>Insert real silence gap between tracks with a negative transition time</string>
+            </property>
+            <property name="buddy">
+              <cstring>SilenceGapCheckBox</cstring>
+            </property>
+          </widget>
+        </item>
+
+        <item row="1" column="1">
+          <widget class="QCheckBox" name="SilenceGapCheckBox">
+            <property name="toolTip">
+              <string>When the transition time is negative, wait |transition time| seconds of true silence after the current track, then start the next track exactly at its marked start point (intro start cue, first sound or 0:00) instead of seeking |transition time| seconds before it.</string>
+            </property>
+          </widget>
+        </item>
+
+        <item row="1" column="2">
+          <spacer name="horizontalSpacerSilenceGap">
+            <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizePolicy">
+              <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
+                <horstretch>1</horstretch>
+                <verstretch>0</verstretch>
+              </sizepolicy>
+            </property>
+          </spacer>
+        </item>
+
+        <item row="2" column="0" colspan="3">
           <widget class="QLabel" name="CenterXfaderHintText">
             <property name="sizePolicy">
               <sizepolicy hsizetype="Expanding" vsizetype="Minimum">

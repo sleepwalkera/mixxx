@@ -919,7 +919,7 @@ void AutoDJProcessor::playerPositionChanged(DeckAttributes* pAttributes,
                     setCrossfader(thisDeck->isLeft() ? 1.0 : -1.0);
                 }
 
-                if (m_transitionTime < 0.0 && m_realSilenceGap) {
+                if (m_transitionTime < 0.0 && realSilenceGapEnabled()) {
                     // "NegativeTimeRealSilence" is enabled: do not start the
                     // next track yet. The from deck fades out first (if any),
                     // then a real silence gap of |transitionTime| seconds
@@ -1699,7 +1699,7 @@ void AutoDJProcessor::useFixedFadeTime(
     } else {
         pFromDeck->fadeBeginPos = fadeEndSecond;
         pFromDeck->fadeEndPos = fadeEndSecond;
-        if (m_realSilenceGap) {
+        if (realSilenceGapEnabled()) {
             // "NegativeTimeRealSilence" is enabled: cue the next track at its
             // start point; it is started only after the gap has elapsed (see
             // startTransitionHold), so the silence is independent of the audio
@@ -1950,8 +1950,14 @@ void AutoDJProcessor::setRealSilenceGapEnabled(bool enabled) {
             }
         }
     }
+}
 
-    emit realSilenceGapChanged(enabled);
+bool AutoDJProcessor::realSilenceGapEnabled() const {
+    // Read the value live from the config so that changing the option in the
+    // preferences applies without a restart, like the other Auto DJ options.
+    return m_pConfig->getValue<bool>(
+            ConfigKey(kPreferenceGroup, kRealSilenceGapPreferenceName),
+            m_realSilenceGap);
 }
 
 void AutoDJProcessor::setTransitionMode(TransitionMode newMode) {

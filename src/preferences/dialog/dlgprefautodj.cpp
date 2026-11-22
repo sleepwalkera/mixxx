@@ -80,6 +80,10 @@ void DlgPrefAutoDJ::slotUpdate() {
     // Re-center the crossfader instantly when AutoDJ is disabled
     CenterXfaderCheckBox->setChecked(m_pConfig->getValue(
             ConfigKey("[Auto DJ]", "center_xfader_when_disabling"), false));
+
+    // Real silence gap for negative transition times
+    SilenceGapCheckBox->setChecked(m_pConfig->getValue<bool>(
+            ConfigKey("[Auto DJ]", "NegativeTimeRealSilence"), false));
 }
 
 void DlgPrefAutoDJ::slotApply() {
@@ -100,6 +104,9 @@ void DlgPrefAutoDJ::slotApply() {
 
     m_pConfig->setValue(ConfigKey("[Auto DJ]", "center_xfader_when_disabling"),
             CenterXfaderCheckBox->isChecked());
+
+    m_pConfig->setValue(ConfigKey("[Auto DJ]", "NegativeTimeRealSilence"),
+            SilenceGapCheckBox->isChecked());
 }
 
 void DlgPrefAutoDJ::slotResetToDefaults() {
@@ -115,6 +122,8 @@ void DlgPrefAutoDJ::slotResetToDefaults() {
     RandomQueueMinimumSpinBox->setValue(5);
 
     CenterXfaderCheckBox->setChecked(false);
+
+    SilenceGapCheckBox->setChecked(false);
 }
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 7, 0)

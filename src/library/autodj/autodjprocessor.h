@@ -189,10 +189,6 @@ class AutoDJProcessor : public QObject {
         return m_transitionTime;
     }
 
-    bool getRealSilenceGapEnabled() const {
-        return m_realSilenceGap;
-    }
-
     TransitionMode getTransitionMode() const {
         return m_transitionMode;
     }
@@ -225,7 +221,6 @@ class AutoDJProcessor : public QObject {
     void autoDJStateChanged(AutoDJProcessor::AutoDJState state);
     void autoDJError(AutoDJProcessor::AutoDJError error);
     void transitionTimeChanged(int time);
-    void realSilenceGapChanged(bool enabled);
     void randomTrackRequested(int tracksToAdd);
 
   private slots:
@@ -323,6 +318,7 @@ class AutoDJProcessor : public QObject {
     // insert a real silence gap between the tracks instead of seeking the next
     // track back into the file. Default: false (matches previous behavior).
     bool m_realSilenceGap;
+    bool realSilenceGapEnabled() const;
     void slotTransitionHoldElapsed();
     QTimer m_transitionHoldTimer;
     DeckAttributes* m_transitionHoldDeck;

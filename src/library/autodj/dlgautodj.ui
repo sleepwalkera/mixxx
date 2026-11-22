@@ -139,13 +139,6 @@
        </widget>
       </item>
       <item>
-       <widget class="QCheckBox" name="checkBoxRealSilenceGap">
-        <property name="text">
-         <string>Silence gap</string>
-        </property>
-       </widget>
-      </item>
-      <item>
        <spacer name="horizontalSpacer_2">
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
