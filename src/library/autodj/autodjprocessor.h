@@ -2,6 +2,7 @@
 
 #include <QObject>
 #include <QString>
+#include <QTimer>
 #include <memory>
 #include <vector>
 
@@ -188,6 +189,10 @@ class AutoDJProcessor : public QObject {
         return m_transitionTime;
     }
 
+    bool getRealSilenceGapEnabled() const {
+        return m_realSilenceGap;
+    }
+
     TransitionMode getTransitionMode() const {
         return m_transitionMode;
     }
@@ -199,6 +204,7 @@ class AutoDJProcessor : public QObject {
     bool nextTrackLoaded();
 
     void setTransitionTime(int seconds);
+    void setRealSilenceGapEnabled(bool enabled);
 
     void setTransitionMode(TransitionMode newMode);
 
@@ -219,6 +225,7 @@ class AutoDJProcessor : public QObject {
     void autoDJStateChanged(AutoDJProcessor::AutoDJState state);
     void autoDJError(AutoDJProcessor::AutoDJError error);
     void transitionTimeChanged(int time);
+    void realSilenceGapChanged(bool enabled);
     void randomTrackRequested(int tracksToAdd);
 
   private slots:
@@ -255,6 +262,11 @@ class AutoDJProcessor : public QObject {
     virtual void emitAutoDJStateChanged(AutoDJProcessor::AutoDJState state) {
         emit autoDJStateChanged(state);
     }
+    // Starts a real-silence gap of |m_transitionTime| seconds before the next
+    // track starts playing. Used with negative transition times when
+    // "NegativeTimeRealSilence" is enabled. Virtual so tests can simulate the
+    // gap elapsing without a running event loop.
+    virtual void startTransitionHold(DeckAttributes* pToDeck);
 
   private:
     // Gets or sets the crossfader position while normalizing it so that -1 is
@@ -307,6 +319,13 @@ class AutoDJProcessor : public QObject {
     double m_transitionTime; // the desired value set by the user
     TransitionMode m_transitionMode;
     bool m_crossfaderStartCenter;
+    // "[Auto DJ] NegativeTimeRealSilence": with a negative transition time,
+    // insert a real silence gap between the tracks instead of seeking the next
+    // track back into the file. Default: false (matches previous behavior).
+    bool m_realSilenceGap;
+    void slotTransitionHoldElapsed();
+    QTimer m_transitionHoldTimer;
+    DeckAttributes* m_transitionHoldDeck;
 
     PlayerManagerInterface* m_pPlayerManager;
     std::vector<std::unique_ptr<DeckAttributes>> m_decks;

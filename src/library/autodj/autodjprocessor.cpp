@@ -14,6 +14,7 @@ const QString kPreferenceGroup = QStringLiteral("[Auto DJ]");
 const QString kControlGroup = QStringLiteral("[AutoDJ]");
 const char* kTransitionPreferenceName = "Transition";
 const char* kTransitionModePreferenceName = "TransitionMode";
+const char* kRealSilenceGapPreferenceName = "NegativeTimeRealSilence";
 constexpr double kTransitionPreferenceDefault = 10.0;
 constexpr double kKeepPosition = -1.0;
 
@@ -156,6 +157,8 @@ AutoDJProcessor::AutoDJProcessor(
           m_eState(ADJ_DISABLED),
           m_transitionProgress(0.0),
           m_transitionTime(kTransitionPreferenceDefault),
+          m_realSilenceGap(false),
+          m_transitionHoldDeck(nullptr),
           m_pPlayerManager(pPlayerManager),
           m_coCrossfader(QStringLiteral("[Master]"), QStringLiteral("crossfader")),
           m_coCrossfaderReverse(QStringLiteral("[Mixer Profile]"), QStringLiteral("xFaderReverse")),
@@ -183,6 +186,11 @@ AutoDJProcessor::AutoDJProcessor(
     m_enabledAutoDJ.connectValueChangeRequest(this,
             &AutoDJProcessor::controlEnableChangeRequest);
 
+    // Single-shot timer for the real-silence gap of a negative transition time.
+    m_transitionHoldTimer.setSingleShot(true);
+    connect(&m_transitionHoldTimer, &QTimer::timeout,
+            this, &AutoDJProcessor::slotTransitionHoldElapsed);
+
     connect(pPlayerManager,
             &PlayerManagerInterface::numberOfDecksChanged,
             this,
@@ -198,6 +206,10 @@ AutoDJProcessor::AutoDJProcessor(
     m_transitionMode = m_pConfig->getValue(
             ConfigKey(kPreferenceGroup, kTransitionModePreferenceName),
             TransitionMode::FullIntroOutro);
+
+    m_realSilenceGap = m_pConfig->getValue<bool>(
+            ConfigKey(kPreferenceGroup, kRealSilenceGapPreferenceName),
+            false);
 }
 
 void AutoDJProcessor::slotNumberOfDecksChanged(int decks) {
@@ -307,7 +319,12 @@ void AutoDJProcessor::fadeNow() {
     double spinboxTime = fabs(m_transitionTime);
 
     double fadeTime;
-    if (m_transitionMode == TransitionMode::FullIntroOutro ||
+    if (m_transitionTime < 0.0 && m_realSilenceGap) {
+        // "NegativeTimeRealSilence" is enabled: keep the real-silence gap (see
+        // startTransitionHold) and cut the from deck immediately, matching the
+        // automatic transition at the end of a track.
+        fadeTime = 0.0;
+    } else if (m_transitionMode == TransitionMode::FullIntroOutro ||
             m_transitionMode == TransitionMode::FadeAtOutroStart) {
         // Use the intro length as the transition time. If the user has seeked
         // away from the intro start since the track was loaded, start from
@@ -622,6 +639,8 @@ AutoDJProcessor::AutoDJError AutoDJProcessor::toggleAutoDJ(bool enable) {
         m_enabledAutoDJ.setAndConfirm(0.0);
         qDebug() << "Auto DJ disabled";
         m_eState = ADJ_DISABLED;
+        // Cancel a pending silence gap.
+        m_transitionHoldTimer.stop();
         disconnect(&m_coCrossfader,
                 &ControlProxy::valueChanged,
                 this,
@@ -819,6 +838,7 @@ void AutoDJProcessor::playerPositionChanged(DeckAttributes* pAttributes,
                                 << "-> IDLE";
             }
             m_eState = ADJ_IDLE;
+            m_transitionHoldTimer.stop();
             // Invalidate threshold calculated for the old otherDeck
             // This avoids starting a fade back before the new track is
             // loaded into the otherDeck
@@ -904,7 +924,13 @@ void AutoDJProcessor::playerPositionChanged(DeckAttributes* pAttributes,
                     setCrossfader(thisDeck->isLeft() ? 1.0 : -1.0);
                 }
 
-                if (!otherDeckPlaying) {
+                if (m_transitionTime < 0.0 && m_realSilenceGap) {
+                    // "NegativeTimeRealSilence" is enabled: do not start the
+                    // next track yet. Insert a real silence gap of
+                    // |transitionTime| seconds, then start it from its cued
+                    // start point.
+                    startTransitionHold(otherDeck);
+                } else if (!otherDeckPlaying) {
                     otherDeck->play();
                 }
 
@@ -1674,8 +1700,37 @@ void AutoDJProcessor::useFixedFadeTime(
     } else {
         pFromDeck->fadeBeginPos = fadeEndSecond;
         pFromDeck->fadeEndPos = fadeEndSecond;
-        pToDeck->startPos = toDeckStartSecond + m_transitionTime;
+        if (m_realSilenceGap) {
+            // "NegativeTimeRealSilence" is enabled: cue the next track at its
+            // start point; it is started only after the gap has elapsed (see
+            // startTransitionHold), so the silence is independent of the audio
+            // file's lead-in content.
+            pToDeck->startPos = toDeckStartSecond;
+        } else {
+            // Default behavior: seek the next track |transitionTime| seconds
+            // before its start point, so the track's own lead-in (or the
+            // engine's silence before position 0) fills the gap.
+            pToDeck->startPos = toDeckStartSecond + m_transitionTime;
+        }
     }
+}
+
+void AutoDJProcessor::startTransitionHold(DeckAttributes* pToDeck) {
+    m_transitionHoldDeck = pToDeck;
+    m_transitionHoldTimer.stop();
+    const double holdMs = -m_transitionTime * 1000.0;
+    m_transitionHoldTimer.start(holdMs < 1.0 ? 1 : static_cast<int>(holdMs));
+}
+
+void AutoDJProcessor::slotTransitionHoldElapsed() {
+    if (m_eState != ADJ_LEFT_FADING && m_eState != ADJ_RIGHT_FADING) {
+        // The transition was aborted (AutoDJ disabled or the user took over).
+        return;
+    }
+    if (!m_transitionHoldDeck || m_transitionHoldDeck->isPlaying()) {
+        return;
+    }
+    m_transitionHoldDeck->play();
 }
 
 void AutoDJProcessor::playerTrackLoaded(DeckAttributes* pDeck, TrackPointer pTrack) {
@@ -1745,6 +1800,9 @@ void AutoDJProcessor::playerLoadingTrack(DeckAttributes* pDeck,
     }
 
     pDeck->loading = true;
+
+    // A track change aborts any pending silence gap.
+    m_transitionHoldTimer.stop();
 
     // The Deck is loading an new track
 
@@ -1855,6 +1913,42 @@ void AutoDJProcessor::setTransitionTime(int time) {
             calculateTransition(pRightDeck, pLeftDeck, false);
         }
     }
+}
+
+void AutoDJProcessor::setRealSilenceGapEnabled(bool enabled) {
+    // Update the preference first.
+    m_pConfig->setValue(ConfigKey(kPreferenceGroup, kRealSilenceGapPreferenceName),
+            enabled);
+    m_realSilenceGap = enabled;
+
+    if (!m_realSilenceGap) {
+        // A pending gap is no longer wanted.
+        m_transitionHoldTimer.stop();
+    }
+
+    // Then re-calculate fade thresholds for the decks.
+    if (m_eState == ADJ_IDLE) {
+        DeckAttributes* pLeftDeck = getLeftDeck();
+        DeckAttributes* pRightDeck = getRightDeck();
+        if (!pLeftDeck || !pRightDeck) {
+            return;
+        }
+        if (pLeftDeck->isPlaying()) {
+            calculateTransition(pLeftDeck, pRightDeck, true);
+            if (pRightDeck->startPos != kKeepPosition) {
+                // Note: this seek will trigger the playerPositionChanged slot
+                // which may call the calculateTransition() again without seek = true;
+                pRightDeck->setPlayPosition(pRightDeck->startPos);
+            }
+        } else if (pRightDeck->isPlaying()) {
+            calculateTransition(pRightDeck, pLeftDeck, true);
+            if (pLeftDeck->startPos != kKeepPosition) {
+                pLeftDeck->setPlayPosition(pLeftDeck->startPos);
+            }
+        }
+    }
+
+    emit realSilenceGapChanged(enabled);
 }
 
 void AutoDJProcessor::setTransitionMode(TransitionMode newMode) {
