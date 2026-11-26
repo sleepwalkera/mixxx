@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow
+
+# Experiment: build the AppImage through tools/appimage_build.sh alone, in the
+# same rockylinux 8 container CI uses. This is the same script a host runs
+# locally, where it starts the container and re-runs itself inside it, so this
+# job checks that the one file works for both cases.
+name: Experimental single-script AppImage build
+
+on:
+  push:
+    branches:
+      - exp-appimage-build
+  workflow_dispatch:
+
+permissions:
+  contents: read # to fetch code (actions/checkout)
+
+jobs:
+  appimage-single-script:
+    name: AppImage via the shared script
+    runs-on: ubuntu-24.04
+    container: rockylinux:8
+    steps:
+      - name: "Install git"
+        # The script also installs it, but the checkout runs before the script.
+        run: dnf install -y git
+      - name: "Check out repository"
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: "Build AppImage with the shared script"
+        env:
+          MIXXX_APPIMAGE_IN_CONTAINER: "1"
+          MIXXX_SOURCE_DIR: ${{ github.workspace }}
+          MIXXX_BUILD_DIR: ${{ github.workspace }}/build
+          BUILDENV_BASEPATH: ${{ github.workspace }}/buildenv
+        run: tools/appimage_build.sh
+      - name: "Link command diagnostic"
+        # If the build fails, show how the executables are linked, so we can
+        # compare the FFmpeg and Qt plugin libraries and find the difference.
+        if: failure()
+        run: |
+          for target in mixxx mixxx-test; do
+            file="build/CMakeFiles/${target}.dir/link.txt"
+            echo "=== ${file}"
+            if [ -f "${file}" ]; then
+              tr ' ' '\n' < "${file}" |
+                grep -E "sws|FFmpegMediaPlugin|start-group|end-group|whole-archive|libavcodec|libavformat|libavutil|libswresample|fdk" |
+                sed -E "s#.*/lib#lib#" | sort | uniq -c
+            else
+              echo "missing ${file}"
+            fi
+          done
+      - name: "Upload AppImage"
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: exp-appimage-x86_64
+          path: build/*.AppImage
