@@ -173,7 +173,18 @@ except Exception:
     cpack -G AppImage -V
 
     echo "---- [AppImage] Check floor dependencies ----"
-    APPIMAGE=$(find "${MIXXX_BUILD_DIR}" -maxdepth 1 -name '*.AppImage' -print -quit)
+    # The container has no findutils, so pick the AppImage with a glob.
+    APPIMAGE=
+    for candidate in "${MIXXX_BUILD_DIR}"/*.AppImage; do
+        if [ -e "${candidate}" ]; then
+            APPIMAGE=${candidate}
+            break
+        fi
+    done
+    if [ -z "${APPIMAGE}" ]; then
+        echo "ERROR: no AppImage found in ${MIXXX_BUILD_DIR}" >&2
+        exit 1
+    fi
     python3 "${MIXXX_SOURCE_DIR}/tools/check_appimage_floor_deps.py" "${APPIMAGE}"
 
     echo "---- [AppImage] Smoke test ----"

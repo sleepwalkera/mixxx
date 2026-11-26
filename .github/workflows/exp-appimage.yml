@@ -33,10 +33,11 @@ jobs:
           MIXXX_APPIMAGE_IN_CONTAINER: "1"
           MIXXX_SOURCE_DIR: ${{ github.workspace }}
           MIXXX_BUILD_DIR: ${{ github.workspace }}/build
-          # Control experiment: use the exact buildenv path the standard CI
-          # AppImage job uses, to tell whether the path (instead of something
-          # in the build steps) is what changes the resulting link line.
-          BUILDENV_BASEPATH: /home/runner/buildenv
+          # Keep the buildenv outside the checkout. When it sits inside the
+          # repository, Qt pulls its static FFmpeg multimedia plugin into the
+          # link line; the standard CI job keeps the buildenv in the runner
+          # home, outside the checkout, so do the same here.
+          BUILDENV_BASEPATH: ${{ runner.temp }}/buildenv
         run: tools/appimage_build.sh
       - name: "Link command diagnostic"
         # Show how the executables are linked, so we can compare the FFmpeg
