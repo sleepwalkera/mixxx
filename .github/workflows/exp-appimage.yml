@@ -33,13 +33,21 @@ jobs:
           MIXXX_APPIMAGE_IN_CONTAINER: "1"
           MIXXX_SOURCE_DIR: ${{ github.workspace }}
           MIXXX_BUILD_DIR: ${{ github.workspace }}/build
-          BUILDENV_BASEPATH: ${{ github.workspace }}/buildenv
+          # Control experiment: use the exact buildenv path the standard CI
+          # AppImage job uses, to tell whether the path (instead of something
+          # in the build steps) is what changes the resulting link line.
+          BUILDENV_BASEPATH: /home/runner/buildenv
         run: tools/appimage_build.sh
       - name: "Link command diagnostic"
-        # If the build fails, show how the executables are linked, so we can
-        # compare the FFmpeg and Qt plugin libraries and find the difference.
-        if: failure()
+        # Show how the executables are linked, so we can compare the FFmpeg
+        # and Qt plugin libraries against the standard CI job for this commit.
+        if: always()
         run: |
+          echo "=== CMake cache"
+          grep -E '^(CMAKE_PREFIX_PATH|FFMPEG|Qt6(FFmpegMediaPluginImplPrivate|Multimedia)_DIR)' \
+            build/CMakeCache.txt || true
+          echo "=== buildenv"
+          ls -ld /home/runner/buildenv/mixxx-deps-* 2>/dev/null || true
           for target in mixxx mixxx-test; do
             file="build/CMakeFiles/${target}.dir/link.txt"
             echo "=== ${file}"

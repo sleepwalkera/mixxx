@@ -460,6 +460,27 @@ jobs:
           CC: ${{ matrix.cc }}
           CXX: ${{ matrix.cxx }}
 
+      - name: "[AppImage] Link command diagnostic (temporary)"
+        # Temporary: capture the link line of the standard AppImage job so it
+        # can be compared with the single-script experiment on the same commit.
+        if: always() && matrix.cpack_generator == 'AppImage'
+        working-directory: build
+        run: |
+          echo "=== CMake cache"
+          grep -E '^(CMAKE_PREFIX_PATH|FFMPEG|Qt6(FFmpegMediaPluginImplPrivate|Multimedia)_DIR)' \
+            CMakeCache.txt || true
+          for target in mixxx mixxx-test; do
+            file="CMakeFiles/${target}.dir/link.txt"
+            echo "=== ${file}"
+            if [ -f "${file}" ]; then
+              tr ' ' '\n' < "${file}" |
+                grep -E "sws|FFmpegMediaPlugin|start-group|end-group|whole-archive|libavcodec|libavformat|libavutil|libswresample|fdk" |
+                sed -E "s#.*/lib#lib#" | sort | uniq -c
+            else
+              echo "missing ${file}"
+            fi
+          done
+
       - name: "[Ubuntu/macOS] Print compiler cache stats"
         if: runner.os != 'windows'
         run: |
