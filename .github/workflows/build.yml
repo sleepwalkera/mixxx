@@ -229,6 +229,7 @@ jobs:
             compiler_cache: ccache
             compiler_cache_path: /home/runner/.cache/ccache
             compiler_cache_id: appimage-qt6
+            cpack_generator: AppImage
             buildenv_basepath: /home/runner/buildenv
             buildenv_script: tools/appimage_release_buildenv.sh
             artifacts_name: AppImage Linux x86_64
