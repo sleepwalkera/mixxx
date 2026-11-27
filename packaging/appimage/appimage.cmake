@@ -149,8 +149,6 @@ install(
     # libraries that do not export the symbols Qt references (e.g.
     # FT_Get_Color_Glyph_Paint), so delegating them would break at runtime.
     "^libfontconfig\\.so.*"
-    "^libfreetype\\.so.*"
-    "^libharfbuzz\\.so.*"
     "^libICE\\.so.*"
     "^libSM\\.so.*"
     "^libuuid\\.so.*"
