@@ -39,6 +39,9 @@ on:
         required: false
       RRYAN_AT_MIXXX_DOT_ORG_GPG_PRIVATE_KEY:
         required: false
+      # [TEMP buildenv] PAT to read the vcpkg fork's action artifacts.
+      GH_PAT:
+        required: false
 
 permissions:
   contents: read #  to fetch code (actions/checkout)
@@ -76,6 +79,8 @@ jobs:
             artifacts_path: build/*.AppImage
             artifacts_slug: linux-appimage
             arch: x86_64
+            # [TEMP buildenv] vcpkg fork artifact with the no-systemd buildenv.
+            buildenv_artifact_id: 15138788550
           - name: AppImage Linux aarch64
             os: ubuntu-22.04-arm
             cmake_args: >-
@@ -100,6 +105,8 @@ jobs:
             artifacts_path: build/*.AppImage
             artifacts_slug: linux-appimage-arm64
             arch: aarch64
+            # [TEMP buildenv] vcpkg fork artifact with the no-systemd buildenv.
+            buildenv_artifact_id: 15144529639
     env:
       # macOS codesigning
       MACOS_CODESIGN_CERTIFICATE_P12_BASE64: ${{ secrets.MACOS_CODESIGN_CERTIFICATE_P12_BASE64 }}
@@ -234,6 +241,50 @@ jobs:
         uses: jwlawson/actions-setup-cmake@v2.2
         with:
           cmake-version: "4.2.x"
+
+      # [TEMP buildenv] Run against the dbus no-systemd buildenv from the
+      # vcpkg fork (artifact of run 45826570057).  Drop this step once that
+      # buildenv is published.
+      - name: "[TEMP buildenv] Fetch the vcpkg fork buildenv"
+        if: startsWith(matrix.buildenv_script, 'tools/appimage_')
+        shell: bash
+        env:
+          BUILDENV_ARTIFACT_ID: ${{ matrix.buildenv_artifact_id }}
+          BUILDENV_BASEPATH: ${{ matrix.buildenv_basepath }}
+          GH_PAT: ${{ secrets.GH_PAT }}
+        run: |
+          set -euo pipefail
+          case "${{ matrix.arch }}" in
+            x86_64) BUILDENV_TRIPLET="x64-linux" ;;
+            aarch64) BUILDENV_TRIPLET="arm64-linux" ;;
+            *) echo "unsupported arch: ${{ matrix.arch }}" >&2; exit 1 ;;
+          esac
+          BUILDENV_NAME="mixxx-deps-2.7-${BUILDENV_TRIPLET}-e5614e8"
+          mkdir -p "${BUILDENV_BASEPATH}"
+          if [ ! -s "${BUILDENV_BASEPATH}/${BUILDENV_NAME}.zip" ]; then
+            curl -fsSL \
+              -H "Authorization: Bearer ${GH_PAT}" \
+              -H "Accept: application/vnd.github+json" \
+              -o /tmp/buildenv-artifact.zip \
+              "https://api.github.com/repos/sleepwalkera/vcpkg/actions/artifacts/${BUILDENV_ARTIFACT_ID}/zip"
+            if unzip -Z1 /tmp/buildenv-artifact.zip 2>/dev/null | grep -qE '^mixxx-deps-[^/]*\.zip$'; then
+              mkdir -p /tmp/buildenv-unwrap
+              unzip -q -o /tmp/buildenv-artifact.zip -d /tmp/buildenv-unwrap
+              mv /tmp/buildenv-unwrap/mixxx-deps-*.zip "${BUILDENV_BASEPATH}/${BUILDENV_NAME}.zip"
+              rm -rf /tmp/buildenv-unwrap
+            else
+              mv /tmp/buildenv-artifact.zip "${BUILDENV_BASEPATH}/${BUILDENV_NAME}.zip"
+            fi
+            rm -f /tmp/buildenv-artifact.zip
+          fi
+          if [ "$(stat -c%s "${BUILDENV_BASEPATH}/${BUILDENV_NAME}.zip")" -lt 1000000000 ]; then
+            echo "ERROR: downloaded buildenv is suspiciously small" >&2
+            exit 1
+          fi
+          echo "BUILDENV_NAME=${BUILDENV_NAME}" >> "${GITHUB_ENV}"
+          echo "VCPKG_TARGET_TRIPLET=${BUILDENV_TRIPLET}" >> "${GITHUB_ENV}"
+          echo "BUILDENV_SHA256=$(sha256sum "${BUILDENV_BASEPATH}/${BUILDENV_NAME}.zip" | cut -d' ' -f1)" >> "${GITHUB_ENV}"
+      # [TEMP buildenv] End.
 
       - name: "[macOS/Linux] Set up build environment"
         if: matrix.buildenv_script != null && runner.os != 'Windows'
